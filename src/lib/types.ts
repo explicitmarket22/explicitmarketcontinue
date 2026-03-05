@@ -2,7 +2,9 @@ export type User = {
   id: string;
   email: string;
   name: string;
+  phoneNumber?: string;
   country: string;
+  password?: string;
   isVerified: boolean;
   isAdmin?: boolean;
   balance?: number;
