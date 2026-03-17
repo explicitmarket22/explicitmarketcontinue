@@ -78,31 +78,31 @@ export function CopyTradingPage() {
   const totalAllocation = activeCopies.reduce((sum, c) => sum + c.allocation, 0);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white p-4 md:p-6 space-y-6 pb-20 md:pb-6">
+    <div className="min-h-screen bg-white dark:bg-[#0d1117] text-gray-900 dark:text-white p-4 md:p-6 space-y-6 pb-20 md:pb-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <Copy className="h-8 w-8 text-[#26a69a]" />
             Copy Trading
           </h1>
-          <p className="text-sm text-[#8b949e] mt-1">Mirror trades from expert traders in real-time</p>
+          <p className="text-sm text-gray-600 dark:text-[#8b949e] mt-1">Mirror trades from expert traders in real-time</p>
         </div>
-        <div className="grid grid-cols-3 gap-3 bg-[#161b22] p-4 rounded-lg border border-[#21262d]">
+        <div className="grid grid-cols-3 gap-3 bg-gray-100 dark:bg-[#161b22] p-4 rounded-lg border border-gray-300 dark:border-[#21262d]">
           <div className="text-center">
-            <p className="text-xs text-[#8b949e] mb-1">Active</p>
+            <p className="text-xs text-gray-600 dark:text-[#8b949e] mb-1">Active</p>
             <p className="text-2xl font-mono font-bold text-[#26a69a]">{activeCopiesCount}</p>
           </div>
-          <div className="w-[1px] bg-[#21262d]" />
+          <div className="w-[1px] bg-gray-300 dark:bg-[#21262d]" />
           <div className="text-center">
-            <p className="text-xs text-[#8b949e] mb-1">Allocated</p>
-            <p className="text-2xl font-mono font-bold text-white">${totalAllocation.toFixed(0)}</p>
+            <p className="text-xs text-gray-600 dark:text-[#8b949e] mb-1">Allocated</p>
+            <p className="text-2xl font-mono font-bold text-gray-900 dark:text-white">${totalAllocation.toFixed(0)}</p>
           </div>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex bg-[#161b22] p-1 rounded border border-[#21262d] overflow-x-auto no-scrollbar">
+      <div className="flex bg-gray-100 dark:bg-[#161b22] p-1 rounded border border-gray-300 dark:border-[#21262d] overflow-x-auto no-scrollbar">
         {['browse', 'active', 'history'].map((tab) => (
           <button
             key={tab}
@@ -110,7 +110,7 @@ export function CopyTradingPage() {
             className={`px-4 md:px-6 py-2 text-sm font-bold rounded capitalize transition-all whitespace-nowrap ${
               activeTab === tab
                 ? 'bg-[#2962ff] text-white shadow-lg'
-                : 'text-[#8b949e] hover:text-white'
+                : 'text-gray-600 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             {tab} {tab === 'active' && activeCopiesCount > 0 && `(${activeCopiesCount})`}

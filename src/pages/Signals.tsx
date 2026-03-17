@@ -145,8 +145,8 @@ export function SignalsPage() {
             <Zap className="h-6 w-6 text-[#2962ff]" />
             <span className="text-[#2962ff] font-bold text-sm">Premium Signal Marketplace</span>
           </div>
-          <h1 className="text-4xl font-bold text-white">Trade Smarter with Expert Signals</h1>
-          <p className="text-[#8b949e] max-w-2xl mx-auto">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Trade Smarter with Expert Signals</h1>
+          <p className="text-gray-600 dark:text-[#8b949e] max-w-2xl mx-auto">
             Copy verified signals from top-performing traders and execute trades with confidence
           </p>
         </div>
@@ -154,43 +154,43 @@ export function SignalsPage() {
 
       {/* Stats Banner */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Total Signals</span>
-            <Zap className="h-4 w-4 text-[#2962ff]" />
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Total Signals</span>
+            <Zap className="h-4 w-4 text-blue-600 dark:text-[#2962ff]" />
           </div>
-          <span className="block text-2xl font-bold text-white">{signals.length}</span>
-          <span className="text-xs text-[#8b949e]">Available to trade</span>
+          <span className="block text-2xl font-bold text-gray-900 dark:text-white">{signals.length}</span>
+          <span className="text-xs text-gray-600 dark:text-[#8b949e]">Available to trade</span>
         </div>
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Active Now</span>
-            <Award className="h-4 w-4 text-[#26a69a]" />
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Active Now</span>
+            <Award className="h-4 w-4 text-green-600 dark:text-[#26a69a]" />
           </div>
-          <span className="block text-2xl font-bold text-[#26a69a]">12</span>
+          <span className="block text-2xl font-bold text-green-600 dark:text-[#26a69a]">12</span>
           <span className="text-xs text-[#8b949e]">Signals in progress</span>
         </div>
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Avg Win Rate</span>
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Avg Win Rate</span>
             <TrendingUp className="h-4 w-4 text-[#26a69a]" />
           </div>
           <span className="block text-2xl font-bold text-[#2962ff]">89%</span>
-          <span className="text-xs text-[#8b949e]">Success rate</span>
+          <span className="text-xs text-gray-600 dark:text-[#8b949e]">Success rate</span>
         </div>
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Top Trader</span>
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Top Trader</span>
             <Star className="h-4 w-4 text-yellow-500" />
           </div>
-          <span className="block text-lg font-bold text-white">{allTraders.reduce((a, b) => (a.winRate > b.winRate ? a : b)).name}</span>
+          <span className="block text-lg font-bold text-gray-900 dark:text-white">{allTraders.reduce((a, b) => (a.winRate > b.winRate ? a : b)).name}</span>
           <span className="text-xs text-yellow-500">{allTraders.reduce((a, b) => (a.winRate > b.winRate ? a : b)).winRate}% accuracy</span>
         </div>
       </div>
 
       {/* Filters */}
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-[#8b949e] uppercase">Filter Signals</h3>
+        <h3 className="text-sm font-bold text-gray-600 dark:text-[#8b949e] uppercase">Filter Signals</h3>
         <div className="flex flex-wrap gap-2">
           {['All', 'Forex', 'Crypto', 'Commodities', 'Premium'].map((filter) => (
             <button
@@ -198,8 +198,8 @@ export function SignalsPage() {
               onClick={() => setActiveFilter(filter)}
               className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
                 activeFilter === filter
-                  ? 'bg-[#2962ff] text-white border-[#2962ff] shadow-lg shadow-blue-500/20'
-                  : 'bg-[#161b22] border-[#21262d] text-[#8b949e] hover:border-[#2962ff] hover:text-white'
+                  ? 'bg-blue-600 dark:bg-[#2962ff] text-white border-blue-600 dark:border-[#2962ff] shadow-lg shadow-blue-500/20'
+                  : 'bg-gray-100 dark:bg-[#161b22] border-gray-300 dark:border-[#21262d] text-gray-600 dark:text-[#8b949e] hover:border-blue-600 dark:hover:border-[#2962ff] hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               {filter}
@@ -210,39 +210,39 @@ export function SignalsPage() {
 
       {/* Signal Performance Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6 space-y-4">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#26a69a]/20 rounded-lg">
               <TrendingUp className="h-6 w-6 text-[#26a69a]" />
             </div>
             <div>
-              <h3 className="font-bold text-white">Recent Performance</h3>
-              <p className="text-xs text-[#8b949e]">Last 24 hours</p>
+              <h3 className="font-bold text-gray-900 dark:text-white">Recent Performance</h3>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e]">Last 24 hours</p>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-[#8b949e]">Signal Accuracy</span>
+              <span className="text-gray-600 dark:text-[#8b949e]">Signal Accuracy</span>
               <span className="font-bold text-[#26a69a]">92.4%</span>
             </div>
-            <div className="w-full h-2 bg-[#0d1117] rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-gray-300 dark:bg-[#0d1117] rounded-full overflow-hidden">
               <div className="h-full w-[92.4%] bg-gradient-to-r from-[#26a69a] to-[#2962ff]" />
             </div>
           </div>
         </div>
 
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6 space-y-4">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#2962ff]/20 rounded-lg">
               <Zap className="h-6 w-6 text-[#2962ff]" />
             </div>
             <div>
-              <h3 className="font-bold text-white">Profit Potential</h3>
-              <p className="text-xs text-[#8b949e]">Average per trade</p>
+              <h3 className="font-bold text-gray-900 dark:text-white">Profit Potential</h3>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e]">Average per trade</p>
             </div>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-[#8b949e]">Monthly Return</span>
+            <span className="text-gray-600 dark:text-[#8b949e]">Monthly Return</span>
             <span className="font-bold text-[#26a69a] text-lg">+1,450 pips</span>
           </div>
         </div>
@@ -252,15 +252,15 @@ export function SignalsPage() {
       {purchasedSignals.length > 0 && (
         <div className="space-y-6">
           <div className="space-y-2">
-            <h3 className="text-2xl font-bold text-white mb-2">My Signal Subscriptions</h3>
-            <p className="text-[#8b949e]">Active signals with real-time trading performance</p>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">My Signal Subscriptions</h3>
+            <p className="text-gray-600 dark:text-[#8b949e]">Active signals with real-time trading performance</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {purchasedSignals.map((signal) => (
               <div
                 key={signal.id}
-                className="group relative bg-gradient-to-br from-[#161b22] via-[#161b22] to-[#0d1117] border border-[#21262d] rounded-2xl overflow-hidden transition-all duration-300 hover:border-transparent hover:shadow-2xl hover:shadow-teal-500/20"
+                className="group relative bg-gradient-to-br from-gray-50 dark:from-[#161b22] via-gray-100 dark:via-[#161b22] to-white dark:to-[#0d1117] border border-gray-300 dark:border-[#21262d] rounded-2xl overflow-hidden transition-all duration-300 hover:border-transparent hover:shadow-2xl hover:shadow-teal-500/20"
               >
                 {/* Animated Background Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#26a69a]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -271,9 +271,9 @@ export function SignalsPage() {
                 {/* Content */}
                 <div className="relative z-10 flex flex-col h-full">
                   {/* Header */}
-                  <div className="p-6 space-y-3 border-b border-[#21262d]">
+                  <div className="p-6 space-y-3 border-b border-gray-300 dark:border-[#21262d]">
                     <div className="space-y-1.5">
-                      <h4 className="text-xl font-bold text-white">{signal.providerName}</h4>
+                      <h4 className="text-xl font-bold text-gray-900 dark:text-white">{signal.providerName}</h4>
                       <span
                         className={`inline-flex text-xs font-bold px-3 py-1.5 rounded-full border ${
                           signal.status === 'ACTIVE'
@@ -298,19 +298,19 @@ export function SignalsPage() {
                     {(signal.status === 'ACTIVE' || signal.status === 'APPROVED_FOR_ALLOCATION') && (
                       <>
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-[#0d1117] p-4 rounded-lg border border-[#21262d] space-y-1.5">
-                            <span className="text-xs text-[#8b949e] font-medium">Win Rate</span>
+                          <div className="bg-gray-100 dark:bg-[#0d1117] p-4 rounded-lg border border-gray-300 dark:border-[#21262d] space-y-1.5">
+                            <span className="text-xs text-gray-600 dark:text-[#8b949e] font-medium">Win Rate</span>
                             <span className="block text-lg font-bold text-[#26a69a]">{signal.winRate}%</span>
                           </div>
-                          <div className="bg-[#0d1117] p-4 rounded-lg border border-[#21262d] space-y-1.5">
-                            <span className="text-xs text-[#8b949e] font-medium">Allocated</span>
-                            <span className="block text-lg font-bold text-white">${signal.allocation.toFixed(2)}</span>
+                          <div className="bg-gray-100 dark:bg-[#0d1117] p-4 rounded-lg border border-gray-300 dark:border-[#21262d] space-y-1.5">
+                            <span className="text-xs text-gray-600 dark:text-[#8b949e] font-medium">Allocated</span>
+                            <span className="block text-lg font-bold text-gray-900 dark:text-white">${signal.allocation.toFixed(2)}</span>
                           </div>
                         </div>
 
                         {signal.status === 'ACTIVE' && (
-                          <div className="bg-[#0d1117] p-4 rounded-lg border border-[#21262d] space-y-1.5">
-                            <span className="text-xs text-[#8b949e] font-medium">Earnings</span>
+                          <div className="bg-gray-100 dark:bg-[#0d1117] p-4 rounded-lg border border-gray-300 dark:border-[#21262d] space-y-1.5">
+                            <span className="text-xs text-gray-600 dark:text-[#8b949e] font-medium">Earnings</span>
                             <span className={`block text-lg font-bold ${signal.earnings >= 0 ? 'text-[#26a69a]' : 'text-red-400'}`}>
                               {signal.earnings >= 0 ? '+' : ''} ${signal.earnings.toFixed(2)}
                             </span>
@@ -328,10 +328,10 @@ export function SignalsPage() {
                   </div>
 
                   {/* Footer Actions */}
-                  <div className="p-4 border-t border-[#21262d] bg-[#0d1117]/50 space-y-2">
+                  <div className="p-4 border-t border-gray-300 dark:border-[#21262d] bg-gray-50 dark:bg-[#0d1117]/50 space-y-2">
                     {signal.status === 'ACTIVE' && (
                       <div className="space-y-2">
-                        <div className="text-xs text-[#8b949e] text-center bg-[#161b22] p-2.5 rounded-lg border border-[#21262d]">
+                        <div className="text-xs text-gray-600 dark:text-[#8b949e] text-center bg-gray-100 dark:bg-[#161b22] p-2.5 rounded-lg border border-gray-300 dark:border-[#21262d]">
                           Following {signal.providerName}'s signals in real-time
                         </div>
                         <button
@@ -363,7 +363,7 @@ export function SignalsPage() {
       {customTraders.length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-white">Special Signals</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Special Signals</h3>
             <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded text-xs font-bold">SPECIAL</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -378,13 +378,13 @@ export function SignalsPage() {
               return (
                 <div
                   key={trader.id}
-                  className="bg-[#161b22] border border-[#21262d] rounded-lg overflow-hidden hover:border-cyan-500 transition-all group hover:shadow-lg hover:shadow-cyan-500/10"
+                  className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg overflow-hidden hover:border-cyan-500 dark:hover:border-cyan-500 transition-all group hover:shadow-lg hover:shadow-cyan-500/10"
                 >
                   {/* Top Gradient Bar */}
                   <div className="h-1 bg-gradient-to-r from-cyan-500 to-blue-500" />
 
                   {/* Trader Header */}
-                  <div className="p-4 border-b border-[#21262d] bg-[#0d1117] space-y-3">
+                  <div className="p-4 border-b border-gray-300 dark:border-[#21262d] bg-white dark:bg-[#0d1117] space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`w-12 h-12 rounded-full ${trader.avatar} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
@@ -392,26 +392,26 @@ export function SignalsPage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-white">{trader.name}</span>
+                            <span className="font-bold text-gray-900 dark:text-white">{trader.name}</span>
                             <CheckCircle className="h-4 w-4 text-cyan-400" />
                           </div>
-                          <p className="text-xs text-[#8b949e]">{trader.totalSignals} signals sent</p>
+                          <p className="text-xs text-gray-600 dark:text-[#8b949e]">{trader.totalSignals} signals sent</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-[#8b949e]">Win Rate</p>
-                        <p className="text-lg font-bold text-[#26a69a]">{trader.winRate}%</p>
+                        <p className="text-xs text-gray-600 dark:text-[#8b949e]">Win Rate</p>
+                        <p className="text-lg font-bold text-green-600 dark:text-[#26a69a]">{trader.winRate}%</p>
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-[#161b22] p-2 rounded border border-[#21262d]">
-                        <p className="text-[#8b949e]">Followers</p>
-                        <p className="font-bold text-white">{trader.followers.toLocaleString()}</p>
+                      <div className="bg-gray-200 dark:bg-[#161b22] p-2 rounded border border-gray-300 dark:border-[#21262d]">
+                        <p className="text-gray-600 dark:text-[#8b949e]">Followers</p>
+                        <p className="font-bold text-gray-900 dark:text-white">{trader.followers.toLocaleString()}</p>
                       </div>
-                      <div className="bg-[#161b22] p-2 rounded border border-[#21262d]">
-                        <p className="text-[#8b949e]">Confidence</p>
-                        <p className="font-bold text-cyan-400">{trader.confidence}%</p>
+                      <div className="bg-gray-200 dark:bg-[#161b22] p-2 rounded border border-gray-300 dark:border-[#21262d]">
+                        <p className="text-gray-600 dark:text-[#8b949e]">Confidence</p>
+                        <p className="font-bold text-cyan-500 dark:text-cyan-400">{trader.confidence}%</p>
                       </div>
                     </div>
                   </div>
@@ -420,7 +420,7 @@ export function SignalsPage() {
                   <div className="p-6 space-y-4">
                     {/* Symbol and Type */}
                     <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-white">{trader.symbol}</span>
+                      <span className="text-2xl font-bold text-gray-900 dark:text-white">{trader.symbol}</span>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${signalType === 'BUY' ? 'bg-[#26a69a]/20 text-[#26a69a]' : 'bg-[#ef5350]/20 text-[#ef5350]'}`}>
                         {signalType}
                       </span>
@@ -428,27 +428,27 @@ export function SignalsPage() {
 
                     {/* Price Levels */}
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-[#0d1117] p-3 rounded border border-[#21262d] space-y-1">
-                        <p className="text-xs text-[#8b949e]">Entry</p>
-                        <p className="font-mono font-bold text-white text-sm">{entryPrice}</p>
+                      <div className="bg-white dark:bg-[#0d1117] p-3 rounded border border-gray-300 dark:border-[#21262d] space-y-1">
+                        <p className="text-xs text-gray-600 dark:text-[#8b949e]">Entry</p>
+                        <p className="font-mono font-bold text-gray-900 dark:text-white text-sm">{entryPrice}</p>
                       </div>
-                      <div className="bg-[#0d1117] p-3 rounded border border-[#21262d] space-y-1">
-                        <p className="text-xs text-[#8b949e]">Stop Loss</p>
-                        <p className="font-mono font-bold text-[#ef5350] text-sm">{slPrice}</p>
+                      <div className="bg-white dark:bg-[#0d1117] p-3 rounded border border-gray-300 dark:border-[#21262d] space-y-1">
+                        <p className="text-xs text-gray-600 dark:text-[#8b949e]">Stop Loss</p>
+                        <p className="font-mono font-bold text-red-600 dark:text-[#ef5350] text-sm">{slPrice}</p>
                       </div>
-                      <div className="bg-[#0d1117] p-3 rounded border border-[#21262d] space-y-1">
-                        <p className="text-xs text-[#8b949e]">Take Profit</p>
-                        <p className="font-mono font-bold text-[#26a69a] text-sm">{tpPrice}</p>
+                      <div className="bg-white dark:bg-[#0d1117] p-3 rounded border border-gray-300 dark:border-[#21262d] space-y-1">
+                        <p className="text-xs text-gray-600 dark:text-[#8b949e]">Take Profit</p>
+                        <p className="font-mono font-bold text-green-600 dark:text-[#26a69a] text-sm">{tpPrice}</p>
                       </div>
                     </div>
 
                     {/* Confidence Meter */}
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-[#8b949e]">Confidence Level</span>
-                        <span className="text-sm font-bold text-white">{trader.confidence}%</span>
+                        <span className="text-xs text-gray-600 dark:text-[#8b949e]">Confidence Level</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{trader.confidence}%</span>
                       </div>
-                      <div className="w-full h-2 bg-[#0d1117] rounded-full overflow-hidden border border-[#21262d]">
+                      <div className="w-full h-2 bg-gray-200 dark:bg-[#0d1117] rounded-full overflow-hidden border border-gray-300 dark:border-[#21262d]">
                         <div
                           className={`h-full transition-all ${trader.confidence > 85 ? 'bg-[#26a69a]' : trader.confidence > 70 ? 'bg-[#2962ff]' : 'bg-yellow-500'}`}
                           style={{ width: `${trader.confidence}%` }}
@@ -458,14 +458,14 @@ export function SignalsPage() {
                   </div>
 
                   {/* Footer */}
-                  <div className="p-4 border-t border-[#21262d] flex items-center justify-between bg-[#0d1117]">
+                  <div className="p-4 border-t border-gray-300 dark:border-[#21262d] flex items-center justify-between bg-white dark:bg-[#0d1117]">
                     <div>
                       {price === 0 ? (
                         <span className="text-lg font-bold text-[#26a69a]">FREE</span>
                       ) : (
                         <>
-                          <span className="text-lg font-bold text-white">${price.toFixed(2)}</span>
-                          <p className="text-xs text-[#8b949e]">One-time</p>
+                          <span className="text-lg font-bold text-gray-900 dark:text-white">${price.toFixed(2)}</span>
+                          <p className="text-xs text-gray-600 dark:text-[#8b949e]">One-time</p>
                         </>
                       )}
                     </div>
@@ -485,7 +485,7 @@ export function SignalsPage() {
 
       {/* Signals Grid */}
       <div>
-        <h3 className="text-lg font-bold text-white mb-6">Available Signals ({filteredSignals.length})</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Available Signals ({filteredSignals.length})</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {filteredSignals.map((signal, idx) => {
             const trader = allTraders[idx % allTraders.length];
@@ -495,7 +495,7 @@ export function SignalsPage() {
             return (
               <div
                 key={signal.id}
-                className="group relative bg-gradient-to-br from-[#161b22] via-[#161b22] to-[#0d1117] border border-[#21262d] rounded-2xl overflow-hidden transition-all duration-300 hover:border-transparent hover:shadow-2xl hover:shadow-teal-500/20"
+                className="group relative bg-gradient-to-br from-gray-50 dark:from-[#161b22] via-gray-100 dark:via-[#161b22] to-white dark:to-[#0d1117] border border-gray-300 dark:border-[#21262d] rounded-2xl overflow-hidden transition-all duration-300 hover:border-transparent hover:shadow-2xl hover:shadow-teal-500/20"
               >
                 {/* Animated Background Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#26a69a]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -506,33 +506,33 @@ export function SignalsPage() {
                 {/* Content */}
                 <div className="relative z-10 flex flex-col h-full">
                   {/* Trader Header */}
-                  <div className="p-4 border-b border-[#21262d] bg-[#0d1117]/50 space-y-3">
+                  <div className="p-4 border-b border-gray-300 dark:border-[#21262d] bg-white dark:bg-[#0d1117]/50 space-y-3">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-14 h-14 rounded-full ${trader.avatar} flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-[#21262d]`}
+                        className={`w-14 h-14 rounded-full ${trader.avatar} flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-gray-300 dark:ring-[#21262d]`}
                       >
                         {trader.name[0]}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="font-bold text-white truncate">{trader.name}</span>
+                          <span className="font-bold text-gray-900 dark:text-white truncate">{trader.name}</span>
                           {trader.verified && <CheckCircle className="h-4 w-4 text-[#2962ff] flex-shrink-0" />}
                         </div>
-                        <p className="text-xs text-[#8b949e]">{trader.totalSignals} signals</p>
+                        <p className="text-xs text-gray-600 dark:text-[#8b949e]">{trader.totalSignals} signals</p>
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-[#161b22] p-2.5 rounded-lg border border-[#21262d] space-y-0.5">
-                        <p className="text-[10px] text-[#8b949e] font-medium">Win Rate</p>
+                      <div className="bg-gray-100 dark:bg-[#161b22] p-2.5 rounded-lg border border-gray-300 dark:border-[#21262d] space-y-0.5">
+                        <p className="text-[10px] text-gray-600 dark:text-[#8b949e] font-medium">Win Rate</p>
                         <p className="font-bold text-[#26a69a] text-sm">{trader.winRate}%</p>
                       </div>
-                      <div className="bg-[#161b22] p-2.5 rounded-lg border border-[#21262d] space-y-0.5">
-                        <p className="text-[10px] text-[#8b949e] font-medium">Followers</p>
-                        <p className="font-bold text-white text-sm">{(trader.followers / 1000).toFixed(1)}k</p>
+                      <div className="bg-gray-100 dark:bg-[#161b22] p-2.5 rounded-lg border border-gray-300 dark:border-[#21262d] space-y-0.5">
+                        <p className="text-[10px] text-gray-600 dark:text-[#8b949e] font-medium">Followers</p>
+                        <p className="font-bold text-gray-900 dark:text-white text-sm">{(trader.followers / 1000).toFixed(1)}k</p>
                       </div>
-                      <div className="bg-[#161b22] p-2.5 rounded-lg border border-[#21262d] space-y-0.5">
-                        <p className="text-[10px] text-[#8b949e] font-medium">Accuracy</p>
+                      <div className="bg-gray-100 dark:bg-[#161b22] p-2.5 rounded-lg border border-gray-300 dark:border-[#21262d] space-y-0.5">
+                        <p className="text-[10px] text-gray-600 dark:text-[#8b949e] font-medium">Accuracy</p>
                         <p className="font-bold text-cyan-400 text-sm">{trader.monthlyAccuracy}%</p>
                       </div>
                     </div>
@@ -542,7 +542,7 @@ export function SignalsPage() {
                   <div className="p-5 space-y-4 flex-1">
                     {/* Symbol and Type */}
                     <div className="flex justify-between items-start gap-3">
-                      <span className="text-2xl font-bold text-white">{signal.symbol}</span>
+                      <span className="text-2xl font-bold text-gray-900 dark:text-white">{signal.symbol}</span>
                       <span
                         className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${
                           signal.type === 'BUY'
@@ -556,27 +556,27 @@ export function SignalsPage() {
 
                     {/* Price Levels */}
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-[#0d1117] p-3 rounded-lg border border-[#21262d] space-y-1">
-                        <p className="text-xs text-[#8b949e] font-medium">Entry</p>
+                      <div className="bg-gray-100 dark:bg-[#0d1117] p-3 rounded-lg border border-gray-300 dark:border-[#21262d] space-y-1">
+                        <p className="text-xs text-gray-600 dark:text-[#8b949e] font-medium">Entry</p>
                         <p className="font-mono font-bold text-white text-sm">{signal.entry}</p>
                       </div>
-                      <div className="bg-[#0d1117] p-3 rounded-lg border border-[#21262d] space-y-1">
-                        <p className="text-xs text-[#8b949e] font-medium">SL</p>
+                      <div className="bg-gray-100 dark:bg-[#0d1117] p-3 rounded-lg border border-gray-300 dark:border-[#21262d] space-y-1">
+                        <p className="text-xs text-gray-600 dark:text-[#8b949e] font-medium">SL</p>
                         <p className="font-mono font-bold text-red-400 text-sm">{signal.sl}</p>
                       </div>
-                      <div className="bg-[#0d1117] p-3 rounded-lg border border-[#21262d] space-y-1">
-                        <p className="text-xs text-[#8b949e] font-medium">TP</p>
+                      <div className="bg-gray-100 dark:bg-[#0d1117] p-3 rounded-lg border border-gray-300 dark:border-[#21262d] space-y-1">
+                        <p className="text-xs text-gray-600 dark:text-[#8b949e] font-medium">TP</p>
                         <p className="font-mono font-bold text-[#26a69a] text-sm">{signal.tp}</p>
                       </div>
                     </div>
 
                     {/* Confidence Meter */}
-                    <div className="space-y-2 py-2 border-y border-[#21262d]">
+                    <div className="space-y-2 py-2 border-y border-gray-300 dark:border-[#21262d]">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-[#8b949e] font-medium">Confidence</span>
-                        <span className="text-sm font-bold text-white">{signal.confidence}%</span>
+                        <span className="text-xs text-gray-600 dark:text-[#8b949e] font-medium">Confidence</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{signal.confidence}%</span>
                       </div>
-                      <div className="w-full h-2.5 bg-[#0d1117] rounded-full overflow-hidden border border-[#21262d]">
+                      <div className="w-full h-2.5 bg-gray-200 dark:bg-[#0d1117] rounded-full overflow-hidden border border-gray-300 dark:border-[#21262d]">
                         <div
                           className={`h-full transition-all ${
                             signal.confidence > 85
@@ -592,13 +592,13 @@ export function SignalsPage() {
                   </div>
 
                   {/* Footer CTA */}
-                  <div className="p-4 border-t border-[#21262d] bg-[#0d1117]/50 space-y-3">
-                    <div className="rounded-lg p-3 border bg-white/5 border-white/10">
-                      <p className="text-xs text-[#8b949e] mb-1">Price</p>
-                      <p className="text-lg font-bold text-white">
+                  <div className="p-4 border-t border-gray-300 dark:border-[#21262d] bg-gray-50 dark:bg-[#0d1117]/50 space-y-3">
+                    <div className="rounded-lg p-3 border bg-gray-100 dark:bg-white/5 border-gray-300 dark:border-white/10">
+                      <p className="text-xs text-gray-600 dark:text-[#8b949e] mb-1">Price</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
                         {price}
                       </p>
-                      <p className="text-xs text-[#8b949e] mt-1">One-time access</p>
+                      <p className="text-xs text-gray-600 dark:text-[#8b949e] mt-1">One-time access</p>
                     </div>
                     <button
                       onClick={() => handleBuySignal(signal, trader, priceValue)}
@@ -670,7 +670,7 @@ export function SignalsPage() {
                   value={allocationModal.amount}
                   onChange={(e) => setAllocationModal({ ...allocationModal, amount: e.target.value })}
                   placeholder="0.00"
-                  className="w-full bg-[#0d1117] border border-[#21262d] rounded-lg pl-8 pr-4 py-3 text-white placeholder-[#8b949e] focus:outline-none focus:border-[#26a69a] focus:ring-2 focus:ring-[#26a69a]/30 transition-all text-lg font-semibold"
+                  className="w-full bg-white dark:bg-[#0d1117] border border-gray-300 dark:border-[#21262d] rounded-lg pl-8 pr-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#8b949e] focus:outline-none focus:border-green-500 dark:focus:border-[#26a69a] focus:ring-2 focus:ring-green-500/30 dark:focus:ring-[#26a69a]/30 transition-all text-lg font-semibold"
                 />
               </div>
               <p className="text-xs text-[#8b949e] flex items-center gap-1">
@@ -688,14 +688,14 @@ export function SignalsPage() {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setAllocationModal({ isOpen: false, signalId: '', amount: '' })}
-                className="flex-1 py-3 border border-[#21262d] text-white rounded-lg hover:bg-[#21262d] transition-all font-medium"
+                className="flex-1 py-3 border border-gray-300 dark:border-[#21262d] text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-[#21262d] transition-all font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAllocateCapital}
                 disabled={!allocationModal.amount || parseFloat(allocationModal.amount) <= 0 || parseFloat(allocationModal.amount) > (user?.balance ?? 0)}
-                className="flex-1 py-3 bg-gradient-to-r from-[#26a69a] to-cyan-500 hover:from-teal-500 hover:to-cyan-600 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:from-[#8b949e] disabled:to-[#8b949e] shadow-lg shadow-teal-500/20 disabled:shadow-none"
+                className="flex-1 py-3 bg-gradient-to-r from-green-500 to-teal-500 dark:from-[#26a69a] dark:to-cyan-500 hover:from-green-600 dark:hover:from-teal-600 hover:to-teal-600 dark:hover:to-cyan-600 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 dark:disabled:from-[#8b949e] disabled:to-gray-400 dark:disabled:to-[#8b949e] shadow-lg shadow-teal-500/dark:20 disabled:shadow-none"
               >
                 Allocate Capital
               </button>

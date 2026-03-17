@@ -230,19 +230,19 @@ export function WalletPage() {
 
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white p-4 md:p-6 space-y-6 pb-20 md:pb-6">
+    <div className="min-h-screen bg-white dark:bg-[#0d1117] text-gray-900 dark:text-white p-4 md:p-6 space-y-6 pb-20 md:pb-6">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <Wallet className="h-8 w-8 text-[#26a69a]" />
             Wallet & Funds
           </h1>
-          <p className="text-sm text-[#8b949e] mt-1">Manage your trading account funds</p>
+          <p className="text-sm text-gray-600 dark:text-[#8b949e] mt-1">Manage your trading account funds</p>
         </div>
         <button
           onClick={() => setShowBalance(!showBalance)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#161b22] border border-[#21262d] rounded hover:border-[#8b949e] transition"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded hover:border-gray-400 dark:hover:border-[#8b949e] transition"
         >
           {showBalance ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
           {showBalance ? 'Hide' : 'Show'} Balance
@@ -250,7 +250,7 @@ export function WalletPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex bg-[#161b22] p-1 rounded border border-[#21262d] overflow-x-auto no-scrollbar">
+      <div className="flex bg-gray-100 dark:bg-[#161b22] p-1 rounded border border-gray-300 dark:border-[#21262d] overflow-x-auto no-scrollbar">
         {['overview', 'deposit', 'withdraw', 'history'].map((tab) => (
           <button
             key={tab}
@@ -261,7 +261,7 @@ export function WalletPage() {
             className={`px-4 md:px-6 py-2 text-sm font-bold rounded capitalize transition-all whitespace-nowrap ${
               activeTab === tab
                 ? 'bg-[#2962ff] text-white shadow-lg'
-                : 'text-[#8b949e] hover:text-white'
+                : 'text-gray-600 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             {tab}
@@ -275,21 +275,21 @@ export function WalletPage() {
           {/* Main Balance Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Balance Card */}
-            <div className="bg-gradient-to-br from-[#161b22] to-[#0d1117] border border-[#21262d] rounded-lg p-6 hover:border-[#26a69a] transition">
+            <div className="bg-gradient-to-br from-gray-50 dark:from-[#161b22] to-white dark:to-[#0d1117] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 hover:border-[#26a69a] transition">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-[#8b949e] font-bold uppercase">Balance</span>
+                <span className="text-xs text-gray-600 dark:text-[#8b949e] font-bold uppercase">Balance</span>
                 <DollarSign className="h-4 w-4 text-[#26a69a]" />
               </div>
-              <p className="text-2xl md:text-3xl font-mono font-bold text-white">
+              <p className="text-2xl md:text-3xl font-mono font-bold text-gray-900 dark:text-white">
                 {showBalance ? formatCurrency(account.balance) : '••••••'}
               </p>
-              <p className="text-xs text-[#8b949e] mt-2">Available for trading</p>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e] mt-2">Available for trading</p>
             </div>
 
             {/* Equity Card */}
-            <div className="bg-gradient-to-br from-[#161b22] to-[#0d1117] border border-[#21262d] rounded-lg p-6 hover:border-[#2962ff] transition">
+            <div className="bg-gradient-to-br from-gray-50 dark:from-[#161b22] to-white dark:to-[#0d1117] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 hover:border-[#2962ff] transition">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-[#8b949e] font-bold uppercase">Equity</span>
+                <span className="text-xs text-gray-600 dark:text-[#8b949e] font-bold uppercase">Equity</span>
                 <TrendingUp className="h-4 w-4 text-[#2962ff]" />
               </div>
               <p className={`text-2xl md:text-3xl font-mono font-bold ${
@@ -297,31 +297,31 @@ export function WalletPage() {
               }`}>
                 {showBalance ? formatCurrency(account.equity) : '••••••'}
               </p>
-              <p className="text-xs text-[#8b949e] mt-2">Balance + Open P/L</p>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e] mt-2">Balance + Open P/L</p>
             </div>
 
             {/* Free Margin Card */}
-            <div className="bg-gradient-to-br from-[#161b22] to-[#0d1117] border border-[#21262d] rounded-lg p-6 hover:border-yellow-500 transition">
+            <div className="bg-gradient-to-br from-gray-50 dark:from-[#161b22] to-white dark:to-[#0d1117] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 hover:border-yellow-500 transition">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-[#8b949e] font-bold uppercase">Free Margin</span>
+                <span className="text-xs text-gray-600 dark:text-[#8b949e] font-bold uppercase">Free Margin</span>
                 <Coins className="h-4 w-4 text-yellow-500" />
               </div>
-              <p className="text-2xl md:text-3xl font-mono font-bold text-white">
+              <p className="text-2xl md:text-3xl font-mono font-bold text-gray-900 dark:text-white">
                 {showBalance ? formatCurrency(account.freeMargin) : '••••••'}
               </p>
-              <p className="text-xs text-[#8b949e] mt-2">Available to trade</p>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e] mt-2">Available to trade</p>
             </div>
 
             {/* Margin Level Card */}
-            <div className="bg-gradient-to-br from-[#161b22] to-[#0d1117] border border-[#21262d] rounded-lg p-6 hover:border-purple-500 transition">
+            <div className="bg-gradient-to-br from-gray-50 dark:from-[#161b22] to-white dark:to-[#0d1117] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 hover:border-purple-500 transition">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-[#8b949e] font-bold uppercase">Margin Level</span>
+                <span className="text-xs text-gray-600 dark:text-[#8b949e] font-bold uppercase">Margin Level</span>
                 <BarChart3 className="h-4 w-4 text-purple-500" />
               </div>
-              <p className="text-2xl md:text-3xl font-mono font-bold text-white">
+              <p className="text-2xl md:text-3xl font-mono font-bold text-gray-900 dark:text-white">
                 {account.marginLevel.toFixed(0)}%
               </p>
-              <p className="text-xs text-[#8b949e] mt-2">
+              <p className="text-xs text-gray-600 dark:text-[#8b949e] mt-2">
                 {account.marginLevel > 100 ? 'Healthy' : 'Watch out'}
               </p>
             </div>
@@ -331,32 +331,32 @@ export function WalletPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Statistics */}
             <div className="lg:col-span-2 space-y-4">
-              <h3 className="text-lg font-bold text-white">Account Statistics</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Account Statistics</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="bg-[#161b22] border border-[#21262d] rounded p-4">
-                  <p className="text-sm text-[#8b949e] mb-2">Total Deposited</p>
+                <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded p-4">
+                  <p className="text-sm text-gray-600 dark:text-[#8b949e] mb-2">Total Deposited</p>
                   <p className="text-xl font-mono font-bold text-[#26a69a]">
                     {formatCurrency(totalDeposited)}
                   </p>
                 </div>
-                <div className="bg-[#161b22] border border-[#21262d] rounded p-4">
-                  <p className="text-sm text-[#8b949e] mb-2">Total Withdrawn</p>
+                <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded p-4">
+                  <p className="text-sm text-gray-600 dark:text-[#8b949e] mb-2">Total Withdrawn</p>
                   <p className="text-xl font-mono font-bold text-[#ef5350]">
                     {formatCurrency(totalWithdrawn)}
                   </p>
                 </div>
-                <div className="bg-[#161b22] border border-[#21262d] rounded p-4">
-                  <p className="text-sm text-[#8b949e] mb-2">Pending Withdrawals</p>
+                <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded p-4">
+                  <p className="text-sm text-gray-600 dark:text-[#8b949e] mb-2">Pending Withdrawals</p>
                   <p className="text-xl font-mono font-bold text-yellow-500">
                     {formatCurrency(pendingWithdrawals)}
                   </p>
                 </div>
-                <div className="bg-[#161b22] border border-[#21262d] rounded p-4">
-                  <p className="text-sm text-[#8b949e] mb-2">Leverage</p>
-                  <p className="text-xl font-mono font-bold text-white">1:{account.leverage}</p>
+                <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded p-4">
+                  <p className="text-sm text-gray-600 dark:text-[#8b949e] mb-2">Leverage</p>
+                  <p className="text-xl font-mono font-bold text-gray-900 dark:text-white">1:{account.leverage}</p>
                 </div>
-                <div className="bg-[#161b22] border border-[#21262d] rounded p-4">
-                  <p className="text-sm text-[#8b949e] mb-2">Account Type</p>
+                <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded p-4">
+                  <p className="text-sm text-gray-600 dark:text-[#8b949e] mb-2">Account Type</p>
                   <p className="text-xl font-mono font-bold text-[#2962ff]">{account.type}</p>
                 </div>
                 <div className="bg-[#161b22] border border-[#21262d] rounded p-4">

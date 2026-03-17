@@ -27,6 +27,23 @@ export type User = {
     documentBackName?: string;
     selfieName?: string;
   };
+  // Referral related fields
+  referralCode?: string;
+  referredBy?: string; // User ID who referred this user
+  referralEarnings?: number;
+  totalReferrals?: number;
+};
+
+export type ReferralRecord = {
+  id: string;
+  referrerId: string;
+  referredUserId: string;
+  referredUserEmail: string;
+  referredUserName: string;
+  bonusAmount: number;
+  status: 'PENDING' | 'COMPLETED'; // pending first deposit, completed when bonus given
+  createdAt: number;
+  completedAt?: number;
 };
 
 export type AccountType = 'DEMO' | 'LIVE';

@@ -3,10 +3,14 @@ export type User = {
   email: string;
   name: string;
   country: string;
+  password?: string;
   isVerified: boolean;
   isAdmin?: boolean;
   balance?: number;
   lockedPages?: string[];
+  phoneNumber?: string;
+  kycStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  kycData?: any;
 };
 
 export type AccountType = 'DEMO' | 'LIVE';

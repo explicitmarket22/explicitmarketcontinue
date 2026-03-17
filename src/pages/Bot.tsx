@@ -182,7 +182,7 @@ export function BotPage() {
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-10 pb-20 md:pb-6">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-[#0d1117] via-[#161b22] to-[#0d1117] border border-[#21262d] rounded-lg overflow-hidden p-8">
+      <div className="relative bg-gradient-to-r from-gray-50 dark:from-[#0d1117] via-gray-100 dark:via-[#161b22] to-gray-50 dark:to-[#0d1117] border border-gray-300 dark:border-[#21262d] rounded-lg overflow-hidden p-8">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-96 h-96 bg-[#2962ff] rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-600 rounded-full blur-3xl" />
@@ -192,8 +192,8 @@ export function BotPage() {
             <Bot className="h-6 w-6 text-[#2962ff]" />
             <span className="text-[#2962ff] font-bold text-sm">AI-Powered Trading</span>
           </div>
-          <h1 className="text-4xl font-bold text-white">Automate Your Trading Strategy</h1>
-          <p className="text-[#8b949e] max-w-2xl mx-auto">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Automate Your Trading Strategy</h1>
+          <p className="text-gray-600 dark:text-[#8b949e] max-w-2xl mx-auto">
             Deploy professional trading algorithms to execute trades 24/7 with precision
           </p>
         </div>
@@ -201,42 +201,42 @@ export function BotPage() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Available Bots</span>
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Available Bots</span>
             <Bot className="h-4 w-4 text-[#2962ff]" />
           </div>
-          <span className="block text-2xl font-bold text-white">{allBots.length}</span>
-          <span className="text-xs text-[#8b949e]">Premium & Free</span>
+          <span className="block text-2xl font-bold text-gray-900 dark:text-white">{allBots.length}</span>
+          <span className="text-xs text-gray-600 dark:text-[#8b949e]">Premium & Free</span>
         </div>
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Avg Win Rate</span>
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Avg Win Rate</span>
             <Award className="h-4 w-4 text-[#26a69a]" />
           </div>
           <span className="block text-2xl font-bold text-[#26a69a]">71%</span>
-          <span className="text-xs text-[#8b949e]">Across all bots</span>
+          <span className="text-xs text-gray-600 dark:text-[#8b949e]">Across all bots</span>
         </div>
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Total Trades</span>
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Total Trades</span>
             <BarChart2 className="h-4 w-4 text-yellow-500" />
           </div>
-          <span className="block text-2xl font-bold text-white">1,561</span>
-          <span className="text-xs text-[#8b949e]">Successfully executed</span>
+          <span className="block text-2xl font-bold text-gray-900 dark:text-white">1,561</span>
+          <span className="text-xs text-gray-600 dark:text-[#8b949e]">Successfully executed</span>
         </div>
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Users Benefiting</span>
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Users Benefiting</span>
             <TrendingUp className="h-4 w-4 text-purple-500" />
           </div>
-          <span className="block text-2xl font-bold text-white">3,247</span>
-          <span className="text-xs text-[#8b949e]">Active traders</span>
+          <span className="block text-2xl font-bold text-gray-900 dark:text-white">3,247</span>
+          <span className="text-xs text-gray-600 dark:text-[#8b949e]">Active traders</span>
         </div>
       </div>
 
       {/* Active Bot Section */}
-      <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6 space-y-6">
+      <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-[#2962ff]/20 rounded-lg">

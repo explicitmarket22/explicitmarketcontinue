@@ -10,8 +10,22 @@
 
 body {
   font-family: 'Inter', sans-serif;
+  background-color: #ffffff;
+  color: #1f2937;
+}
+
+body.dark,
+.dark body {
   background-color: #0d1117;
   color: #c9d1d9;
+}
+
+html:not(.dark) {
+  background-color: #ffffff;
+}
+
+html.dark {
+  background-color: #0d1117;
 }
 
 .font-mono {
@@ -25,14 +39,27 @@ body {
 }
 
 ::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+html.dark ::-webkit-scrollbar-track {
   background: #0d1117;
 }
 
 ::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
   background: #30363d;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: #484f58;
 }

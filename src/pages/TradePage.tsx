@@ -58,7 +58,7 @@ export function TradePage() {
     };
   }, []);
   return (
-    <div className="h-screen w-full bg-[#0d1117] overflow-hidden flex flex-col relative">
+    <div className="h-screen w-full bg-white dark:bg-[#0d1117] overflow-hidden flex flex-col relative">
       <AnimatePresence>
         {isLoading &&
         <motion.div
@@ -71,7 +71,7 @@ export function TradePage() {
           transition={{
             duration: 0.5
           }}
-          className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0d1117] text-white">
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white dark:bg-[#0d1117] text-gray-900 dark:text-white">
 
             <div className="w-full max-w-md px-6 text-center">
               <motion.h1
@@ -83,12 +83,12 @@ export function TradePage() {
                 opacity: 1,
                 y: 0
               }}
-              className="text-3xl font-bold text-white mb-8 tracking-tight">
+              className="text-3xl font-bold text-gray-900 dark:text-white mb-8 tracking-tight">
 
                 ExplicitMarket <span className="text-[#2962ff]">Terminal</span>
               </motion.h1>
 
-              <div className="w-full h-1 bg-[#21262d] overflow-hidden mb-4">
+              <div className="w-full h-1 bg-gray-300 dark:bg-[#21262d] overflow-hidden mb-4">
                 <motion.div
                 className="h-full bg-[#2962ff]"
                 initial={{
@@ -103,7 +103,7 @@ export function TradePage() {
 
               </div>
 
-              <div className="flex justify-between items-center text-xs font-mono text-[#8b949e]">
+              <div className="flex justify-between items-center text-xs font-mono text-gray-600 dark:text-[#8b949e]">
                 <motion.span
                 key={loadingText}
                 initial={{
@@ -124,7 +124,7 @@ export function TradePage() {
       </AnimatePresence>
 
       {/* Mobile Symbol Selector */}
-      <div className="md:hidden h-14 bg-[#161b22] border-b border-[#21262d] flex items-center overflow-x-auto no-scrollbar px-2 space-x-2 flex-shrink-0">
+      <div className="md:hidden h-14 bg-gray-100 dark:bg-[#161b22] border-b border-gray-300 dark:border-[#21262d] flex items-center overflow-x-auto no-scrollbar px-2 space-x-2 flex-shrink-0">
         {assets.map((asset) =>
         <button
           key={asset.symbol}
@@ -133,7 +133,7 @@ export function TradePage() {
             'px-3 py-2 rounded text-xs font-bold whitespace-nowrap transition-colors min-h-[44px] flex items-center',
             selectedSymbol === asset.symbol ?
             'bg-[#2962ff] text-white' :
-            'bg-[#0d1117] text-[#8b949e] border border-[#21262d]'
+            'bg-white dark:bg-[#0d1117] text-gray-600 dark:text-[#8b949e] border border-gray-300 dark:border-[#21262d]'
           )}>
 
             {asset.symbol}
@@ -144,17 +144,17 @@ export function TradePage() {
       {/* Main Layout - MT4 Style Grid */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left: Market Overview (Desktop Only) */}
-        <div className="hidden md:block w-[300px] flex-shrink-0 border-r border-[#21262d] overflow-y-auto p-4 bg-[#0d1117]">
+        <div className="hidden md:block w-[300px] flex-shrink-0 border-r border-gray-300 dark:border-[#21262d] overflow-y-auto p-4 bg-white dark:bg-[#0d1117]">
           <ForexListWidget />
         </div>
 
         {/* Center: Chart (Always visible, but flexible height on mobile) */}
-        <div className="flex-shrink-0 h-48 md:h-auto md:flex-1 min-w-0 border-b md:border-b-0 border-[#21262d]">
+        <div className="flex-shrink-0 h-48 md:h-auto md:flex-1 min-w-0 border-b md:border-b-0 border-gray-300 dark:border-[#21262d]">
           <Chart symbol={selectedSymbol} />
         </div>
 
         {/* Mobile Tab Bar */}
-        <div className="md:hidden flex bg-[#161b22] border-b border-[#21262d] flex-shrink-0">
+        <div className="md:hidden flex bg-gray-100 dark:bg-[#161b22] border-b border-gray-300 dark:border-[#21262d] flex-shrink-0">
           {['order', 'market', 'trades'].map((tab) =>
           <button
             key={tab}
@@ -162,8 +162,8 @@ export function TradePage() {
             className={cn(
               'flex-1 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors min-h-[44px] flex items-center justify-center',
               mobileTab === tab ?
-              'border-[#2962ff] text-white bg-[#1c2128]' :
-              'border-transparent text-[#8b949e]'
+              'border-[#2962ff] text-white dark:bg-[#1c2128] bg-[#e0f2ff]' :
+              'border-transparent text-gray-600 dark:text-[#8b949e]'
             )}>
 
               {tab}
@@ -203,13 +203,13 @@ export function TradePage() {
         </div>
 
         {/* Right: Order Panel (Desktop Only) */}
-        <div className="hidden md:block w-[320px] flex-shrink-0 border-l border-[#21262d]">
+        <div className="hidden md:block w-[320px] flex-shrink-0 border-l border-gray-300 dark:border-[#21262d]">
           <OrderPanel symbol={selectedSymbol} onSymbolChange={setSelectedSymbol} />
         </div>
       </div>
 
       {/* Bottom: Trade List (Desktop Only) */}
-      <div className="hidden md:block h-[250px] flex-shrink-0 border-t border-[#21262d]">
+      <div className="hidden md:block h-[250px] flex-shrink-0 border-t border-gray-300 dark:border-[#21262d]">
         <TradeList />
       </div>
     </div>);

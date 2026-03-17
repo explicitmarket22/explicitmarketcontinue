@@ -133,6 +133,7 @@ interface StoreContextType {
   wallets: Wallet[];
   bankAccounts: BankAccount[];
   isAuthenticated: boolean;
+  theme: 'light' | 'dark';
   botActive: boolean;
   login: (email: string, password?: string, signupData?: { fullName: string; phone: string; country: string; password: string }) => { success: boolean; isAdmin?: boolean; error?: string };
   logout: () => void;
@@ -213,6 +214,11 @@ interface StoreContextType {
   approveKYC: (userId: string) => void;
   rejectKYC: (userId: string) => void;
   submitKYC: (userId: string, data: any) => void;
+  // Profile & Theme Management
+  updateUserProfile: (name: string) => void;
+  updatePassword: (email: string, currentPassword: string, newPassword: string) => { success: boolean; message: string };
+  toggleTheme: () => void;
+  getTheme: () => 'light' | 'dark';
   // System Wallet Management Methods
   systemWallets: SystemWallet[];
   addSystemWallet: (name: string, cryptoId: string, network: string, address: string, minDeposit: number) => void;
@@ -224,13 +230,35 @@ interface StoreContextType {
   submitCreditCardDeposit: (userId: string, amount: number, cardNumber: string, cardHolder: string, expiryDate: string) => void;
   approveCreditCardDeposit: (depositId: string, notes?: string) => void;
   rejectCreditCardDeposit: (depositId: string, notes?: string) => void;
+  // Referral Methods
+  referralRecords: any[];
+  completeReferralReward: (referralId: string) => void;
+  getReferralStats: (userId: string) => { totalReferrals: number; totalEarnings: number; pendingEarnings: number };
+  // Admin Referral Management
+  approveReferral: (referralId: string) => void;
+  rejectReferral: (referralId: string) => void;
+  manuallyAddReferral: (userId: string, referrerUserId: string, bonusAmount?: number) => void;
+  adjustReferralBonus: (referralId: string, newBonusAmount: number) => void;
 }
 const StoreContext = createContext<StoreContextType | null>(null);
 
 export function StoreProvider({ children }: {children: React.ReactNode;}) {
   const [user, setUser] = useState<User | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('allUsers');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
   const [botActive, setBotActive] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      return (savedTheme as 'light' | 'dark') || 'dark';
+    }
+    return 'dark';
+  });
   const [purchasedBots, setPurchasedBots] = useState<PurchasedBot[]>([]);
   const [purchasedSignals, setPurchasedSignals] = useState<PurchasedSignal[]>([]);
   const [purchasedCopyTrades, setPurchasedCopyTrades] = useState<CopyTrade[]>([]);
@@ -242,6 +270,24 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [systemWallets, setSystemWallets] = useState<SystemWallet[]>([]);
   const [creditCardDeposits, setCreditCardDeposits] = useState<CreditCardDeposit[]>([]);
+  // Referral Tracking
+  const [referralRecords, setReferralRecords] = useState<Array<{
+    id: string;
+    referrerId: string;
+    referredUserId: string;
+    referredUserEmail: string;
+    referredUserName: string;
+    bonusAmount: number;
+    status: 'PENDING' | 'COMPLETED' | 'REJECTED';
+    createdAt: number;
+    completedAt?: number;
+  }>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('referralRecords');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
   // Account State
   const [account, setAccount] = useState<Account>({
     balance: 10000,
@@ -253,6 +299,57 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     type: 'LIVE',
     currency: 'USD'
   });
+
+  // Apply theme to document on mount and whenever theme changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (theme === 'light') {
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+      }
+      localStorage.setItem('theme', theme);
+    }
+  }, [theme]);
+
+  // Initialize admin user in allUsers on app startup
+  useEffect(() => {
+    setAllUsers((prev) => {
+      const adminExists = prev.some(u => u.id === 'admin-1');
+      if (!adminExists) {
+        const adminUser: User = {
+          id: 'admin-1',
+          email: 'admin@work.com',
+          name: 'Admin',
+          country: 'Global',
+          isVerified: true,
+          isAdmin: true,
+          balance: 0,
+          lockedPages: [],
+          referralCode: 'ADMIN_MASTER',  // Admin's own referral code
+          referralEarnings: 0,
+          totalReferrals: 0,
+          password: 'admin' // Store for admin view
+        };
+        return [...prev, adminUser];
+      }
+      return prev;
+    });
+  }, []);
+
+  // Persist allUsers to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('allUsers', JSON.stringify(allUsers));
+    }
+  }, [allUsers]);
+
+  // Persist referralRecords to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('referralRecords', JSON.stringify(referralRecords));
+    }
+  }, [referralRecords]);
 
   // whenever the logged-in user changes, mirror their balance in account
   useEffect(() => {
@@ -768,7 +865,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
   const login = (email: string, password?: string, signupData?: { fullName: string; phone: string; country: string; password: string }) => {
     // Admin authentication
     if (email === 'admin@work.com' && password === 'admin') {
-      const adminUser: User = {
+      const adminUser = allUsers.find(u => u.id === 'admin-1') || {
         id: 'admin-1',
         email: 'admin@work.com',
         name: 'Admin',
@@ -776,9 +873,13 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         isVerified: true,
         isAdmin: true,
         balance: 0,
-        lockedPages: []
+        lockedPages: [],
+        referralCode: 'ADMIN_MASTER',
+        referralEarnings: 0,
+        totalReferrals: 0,
+        password: 'admin'
       };
-      setUser(adminUser);
+      setUser(adminUser as User);
       return { success: true, isAdmin: true };
     }
 
@@ -788,8 +889,12 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       let loginUser: User;
 
       if (existingUser) {
-        // For login, just return existing user
+        // For login, verify password
         if (!signupData) {
+          // Login attempt - check password
+          if (existingUser.password !== password) {
+            return { success: false, error: 'Invalid email or password' };
+          }
           loginUser = existingUser;
         } else {
           // This shouldn't happen - signup with existing email
@@ -798,8 +903,12 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       } else {
         // Create new user for signup
         if (signupData) {
+          const newUserId = generateId();
+          // Generate unique referral code (format: USER_XXXX)
+          const referralCode = `USER_${newUserId.substring(0, 8).toUpperCase()}`;
+          
           loginUser = {
-            id: generateId(),
+            id: newUserId,
             email,
             name: signupData.fullName,
             phoneNumber: signupData.phone,
@@ -807,9 +916,46 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
             password: signupData.password, // Store password for admin view
             isVerified: false,
             isAdmin: false,
-            balance: 10000,
-            lockedPages: []
+            balance: 4000,
+            lockedPages: [],
+            referralCode,
+            referralEarnings: 0,
+            totalReferrals: 0,
+            referredBy: signupData.referralCode || undefined
           };
+          
+          // If this user was referred by someone, validate & track it
+          if (signupData.referralCode && signupData.referralCode.trim()) {
+            const referrer = allUsers.find(u => u.referralCode === signupData.referralCode.trim());
+            if (referrer) {
+              // Valid referral code found
+              const referralRecord = {
+                id: generateId(),
+                referrerId: referrer.id,
+                referredUserId: newUserId,
+                referredUserEmail: email,
+                referredUserName: signupData.fullName,
+                bonusAmount: 25,
+                status: 'PENDING' as const,
+                createdAt: Date.now()
+              };
+              setReferralRecords(prev => [...prev, referralRecord]);
+              
+              // Update referrer's stats
+              setAllUsers(prev => 
+                prev.map(u => 
+                  u.id === referrer.id
+                    ? { 
+                        ...u, 
+                        totalReferrals: (u.totalReferrals || 0) + 1
+                      }
+                    : u
+                )
+              );
+            }
+            // If referral code invalid, just skip it (don't error)
+          }
+          
           setAllUsers((prev) => [...prev, loginUser]);
         } else {
           // Login attempt for non-existing user
@@ -831,7 +977,53 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     return { success: false, error: 'Invalid credentials' };
   };
 
-  const logout = () => setUser(null);
+  const logout = () => {
+    setUser(null);
+  };
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const getTheme = () => theme;
+
+  const updateUserProfile = (name: string) => {
+    if (user) {
+      const updatedUser = { ...user, name };
+      setUser(updatedUser);
+
+      // Update in allUsers
+      setAllUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? updatedUser : u))
+      );
+    }
+  };
+
+  const updatePassword = (email: string, currentPassword: string, newPassword: string): { success: boolean; message: string } => {
+    // Find user by email
+    const targetUser = allUsers.find((u) => u.email === email);
+    if (!targetUser) {
+      return { success: false, message: 'User not found' };
+    }
+
+    // Verify current password
+    if (targetUser.password !== currentPassword) {
+      return { success: false, message: 'Current password is incorrect' };
+    }
+
+    // Update password
+    const updatedUser = { ...targetUser, password: newPassword };
+    setAllUsers((prev) =>
+      prev.map((u) => (u.id === targetUser.id ? updatedUser : u))
+    );
+
+    // Update current user if they're the one changing password
+    if (user && user.id === targetUser.id) {
+      setUser(updatedUser);
+    }
+
+    return { success: true, message: 'Password updated successfully' };
+  };
 
   // Admin Methods
   const addBalance = (userId: string, amount: number) => {
@@ -2125,6 +2317,247 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     alert(`✅ Converted $${total.toFixed(2)} funded capital to main balance`);
   };
 
+  // Referral Methods
+  const completeReferralReward = (referralId: string) => {
+    const referral = referralRecords.find(r => r.id === referralId);
+    if (!referral) return;
+
+    // Mark referral as completed
+    setReferralRecords(prev =>
+      prev.map(r =>
+        r.id === referralId
+          ? { ...r, status: 'COMPLETED', completedAt: Date.now() }
+          : r
+      )
+    );
+
+    // Add $25 bonus to referrer's balance
+    const referrer = allUsers.find(u => u.id === referral.referrerId);
+    if (referrer) {
+      setAllUsers(prev =>
+        prev.map(u =>
+          u.id === referral.referrerId
+            ? {
+                ...u,
+                balance: (u.balance || 0) + 25,
+                referralEarnings: (u.referralEarnings || 0) + 25
+              }
+            : u
+        )
+      );
+
+      // If current user is the referrer, update their balance too
+      if (user && user.id === referral.referrerId) {
+        const newBal = (user.balance || 0) + 25;
+        setUser({
+          ...user,
+          balance: newBal,
+          referralEarnings: (user.referralEarnings || 0) + 25
+        });
+        setAccount(prev => ({ ...prev, balance: newBal }));
+      }
+    }
+
+    // Record transaction
+    const tx: Transaction = {
+      id: generateId(),
+      userId: referral.referrerId,
+      type: 'REFERRAL_BONUS',
+      amount: 25,
+      method: 'system',
+      status: 'COMPLETED',
+      date: Date.now()
+    };
+    setTransactions(prev => [tx, ...prev]);
+  };
+
+  const getReferralStats = (userId: string) => {
+    const userReferrals = referralRecords.filter(r => r.referrerId === userId);
+    const completedReferrals = userReferrals.filter(r => r.status === 'COMPLETED');
+    const pendingReferrals = userReferrals.filter(r => r.status === 'PENDING');
+
+    return {
+      totalReferrals: userReferrals.length,
+      totalEarnings: completedReferrals.length * 25,
+      pendingEarnings: pendingReferrals.length * 25
+    };
+  };
+
+  // Admin Referral Management Functions
+  const approveReferral = (referralId: string) => {
+    const referral = referralRecords.find(r => r.id === referralId);
+    if (!referral || referral.status === 'COMPLETED') return;
+
+    // Mark as completed
+    setReferralRecords(prev =>
+      prev.map(r =>
+        r.id === referralId
+          ? { ...r, status: 'COMPLETED', completedAt: Date.now() }
+          : r
+      )
+    );
+
+    // Add $25 bonus to referrer's balance (not just pending)
+    const referrer = allUsers.find(u => u.id === referral.referrerId);
+    if (referrer) {
+      setAllUsers(prev =>
+        prev.map(u =>
+          u.id === referral.referrerId
+            ? {
+                ...u,
+                balance: (u.balance || 0) + 25,
+                referralEarnings: (u.referralEarnings || 0) + 25,
+                totalReferrals: (u.totalReferrals || 0) + 1
+              }
+            : u
+        )
+      );
+
+      // If logged-in user is the referrer, update their state
+      if (user && user.id === referral.referrerId) {
+        const newBal = (user.balance || 0) + 25;
+        setUser({
+          ...user,
+          balance: newBal,
+          referralEarnings: (user.referralEarnings || 0) + 25,
+          totalReferrals: (user.totalReferrals || 0) + 1
+        });
+        setAccount(prev => ({ ...prev, balance: newBal }));
+      }
+    }
+
+    // Create transaction record
+    const tx: Transaction = {
+      id: generateId(),
+      userId: referral.referrerId,
+      type: 'REFERRAL_BONUS',
+      amount: 25,
+      method: 'admin_approval',
+      status: 'COMPLETED',
+      date: Date.now()
+    };
+    setTransactions(prev => [tx, ...prev]);
+  };
+
+  const rejectReferral = (referralId: string) => {
+    setReferralRecords(prev =>
+      prev.map(r =>
+        r.id === referralId
+          ? { ...r, status: 'REJECTED', completedAt: Date.now() }
+          : r
+      )
+    );
+  };
+
+  const manuallyAddReferral = (userId: string, referrerUserId: string, bonusAmount: number = 25) => {
+    const newReferralId = generateId();
+    const referredUser = allUsers.find(u => u.id === userId);
+    
+    if (!referredUser) return;
+
+    // Create referral record with COMPLETED status
+    const referralRecord = {
+      id: newReferralId,
+      referrerId: referrerUserId,
+      referredUserId: userId,
+      referredUserEmail: referredUser.email,
+      referredUserName: referredUser.name,
+      bonusAmount: bonusAmount,
+      status: 'COMPLETED' as const,
+      createdAt: Date.now(),
+      completedAt: Date.now()
+    };
+
+    setReferralRecords(prev => [...prev, referralRecord]);
+
+    // Add bonus to referrer's balance immediately
+    const referrer = allUsers.find(u => u.id === referrerUserId);
+    if (referrer) {
+      setAllUsers(prev =>
+        prev.map(u =>
+          u.id === referrerUserId
+            ? {
+                ...u,
+                balance: (u.balance || 0) + bonusAmount,
+                referralEarnings: (u.referralEarnings || 0) + bonusAmount,
+                totalReferrals: (u.totalReferrals || 0) + 1
+              }
+              : u
+        )
+      );
+
+      // If logged-in user is referrer, update their state
+      if (user && user.id === referrerUserId) {
+        const newBal = (user.balance || 0) + bonusAmount;
+        setUser({
+          ...user,
+          balance: newBal,
+          referralEarnings: (user.referralEarnings || 0) + bonusAmount,
+          totalReferrals: (user.totalReferrals || 0) + 1
+        });
+        setAccount(prev => ({ ...prev, balance: newBal }));
+      }
+    }
+
+    // Create transaction
+    const tx: Transaction = {
+      id: generateId(),
+      userId: referrerUserId,
+      type: 'REFERRAL_BONUS',
+      amount: bonusAmount,
+      method: 'manual_admin',
+      status: 'COMPLETED',
+      date: Date.now()
+    };
+    setTransactions(prev => [tx, ...prev]);
+  };
+
+  const adjustReferralBonus = (referralId: string, newBonusAmount: number) => {
+    const referral = referralRecords.find(r => r.id === referralId);
+    if (!referral) return;
+
+    const oldAmount = referral.bonusAmount;
+    const difference = newBonusAmount - oldAmount;
+
+    // Update referral record
+    setReferralRecords(prev =>
+      prev.map(r =>
+        r.id === referralId
+          ? { ...r, bonusAmount: newBonusAmount }
+          : r
+      )
+    );
+
+    // Adjust referrer's balance by the difference
+    if (difference !== 0) {
+      const referrer = allUsers.find(u => u.id === referral.referrerId);
+      if (referrer) {
+        setAllUsers(prev =>
+          prev.map(u =>
+            u.id === referral.referrerId
+              ? {
+                  ...u,
+                  balance: (u.balance || 0) + difference,
+                  referralEarnings: (u.referralEarnings || 0) + difference
+                }
+                : u
+          )
+        );
+
+        // Update current user if they're the referrer
+        if (user && user.id === referral.referrerId) {
+          const newBal = (user.balance || 0) + difference;
+          setUser({
+            ...user,
+            balance: newBal,
+            referralEarnings: (user.referralEarnings || 0) + difference
+          });
+          setAccount(prev => ({ ...prev, balance: newBal }));
+        }
+      }
+    }
+  };
+
   return (
     <StoreContext.Provider
       value={{
@@ -2146,6 +2579,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         wallets,
         bankAccounts,
         isAuthenticated: !!user,
+        theme,
         botActive,
         login,
         logout,
@@ -2216,7 +2650,20 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         // KYC functions
         submitKYC,
         approveKYC,
-        rejectKYC
+        rejectKYC,
+        // Referral functions
+        referralRecords,
+        completeReferralReward,
+        getReferralStats,
+        approveReferral,
+        rejectReferral,
+        manuallyAddReferral,
+        adjustReferralBonus,
+        // Profile & Theme Management
+        updateUserProfile,
+        updatePassword,
+        toggleTheme,
+        getTheme
       }}>
 
       {children}

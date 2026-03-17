@@ -152,8 +152,8 @@ export function KYCPage() {
             <Shield className="h-6 w-6 text-[#2962ff]" />
             <span className="text-[#2962ff] font-bold text-sm">IDENTITY VERIFICATION</span>
           </div>
-          <h1 className="text-3xl font-bold text-white">Know Your Customer (KYC)</h1>
-          <p className="text-[#8b949e] max-w-2xl">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Know Your Customer (KYC)</h1>
+          <p className="text-gray-600 dark:text-[#8b949e] max-w-2xl">
             Complete our verification process to unlock full trading features and higher withdrawal limits
           </p>
         </div>
@@ -161,7 +161,7 @@ export function KYCPage() {
 
       {/* Progress Steps - Only show when no KYC status or rejected */}
       {(!user?.kycStatus || user?.kycStatus === 'REJECTED') && (
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             {steps.map((s, idx) => (
               <div key={s.number} className="flex items-center flex-1">
@@ -171,7 +171,7 @@ export function KYCPage() {
                       ? 'bg-[#26a69a] text-white'
                       : step === s.number
                       ? 'bg-[#2962ff] text-white ring-2 ring-[#2962ff]/50'
-                      : 'bg-[#0d1117] text-[#8b949e] border border-[#21262d]'
+                      : 'bg-white dark:bg-[#0d1117] text-gray-600 dark:text-[#8b949e] border border-gray-300 dark:border-[#21262d]'
                   }`}
                 >
                   {step > s.number ? '✓' : s.number}
@@ -198,37 +198,37 @@ export function KYCPage() {
 
       {/* Step 1: Personal Information */}
       {step === 1 && (!user?.kycStatus || user?.kycStatus === 'REJECTED') && (
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6 space-y-6">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 space-y-6">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-1">Personal Information</h2>
-            <p className="text-[#8b949e]">Please provide your personal details</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Personal Information</h2>
+            <p className="text-gray-600 dark:text-[#8b949e]">Please provide your personal details</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-[#8b949e] mb-2 block">First Name</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-[#8b949e] mb-2 block">First Name</label>
               <input
                 type="text"
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleInputChange}
                 placeholder="John"
-                className="w-full px-4 py-2.5 bg-[#0d1117] border border-[#21262d] text-white rounded-lg focus:outline-none focus:border-[#2962ff]"
+                className="w-full px-4 py-2.5 bg-white dark:bg-[#0d1117] border border-gray-300 dark:border-[#21262d] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:border-[#2962ff]"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-[#8b949e] mb-2 block">Last Name</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-[#8b949e] mb-2 block">Last Name</label>
               <input
                 type="text"
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleInputChange}
                 placeholder="Doe"
-                className="w-full px-4 py-2.5 bg-[#0d1117] border border-[#21262d] text-white rounded-lg focus:outline-none focus:border-[#2962ff]"
+                className="w-full px-4 py-2.5 bg-white dark:bg-[#0d1117] border border-gray-300 dark:border-[#21262d] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:border-[#2962ff]"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-[#8b949e] mb-2 block">Date of Birth</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-[#8b949e] mb-2 block">Date of Birth</label>
               <input
                 type="date"
                 name="dateOfBirth"

@@ -16,13 +16,13 @@ export function Button({
   ...props
 }: ButtonProps) {
   const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm',
+    primary: 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-sm',
     secondary:
-    'bg-gray-800 text-gray-100 hover:bg-gray-700 border border-gray-700',
-    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
+    'bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700',
+    danger: 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 shadow-sm',
     outline:
-    'bg-transparent border border-gray-600 text-gray-300 hover:border-gray-400 hover:text-white',
-    ghost: 'bg-transparent text-gray-400 hover:text-white hover:bg-gray-800/50'
+    'bg-transparent border border-gray-400 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:border-gray-500 dark:hover:border-gray-400',
+    ghost: 'bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50'
   };
   const sizes = {
     sm: 'h-8 px-3 text-xs',

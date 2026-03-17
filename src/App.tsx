@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StoreProvider, useStore } from './lib/store';
-import { AuthPage } from './pages/Auth';
+import { LoginPage } from './pages/Login';
+import { SignupPage } from './pages/Signup';
 import { Dashboard } from './pages/Dashboard';
 import { TradePage } from './pages/TradePage';
 import { WalletPage } from './pages/Wallet';
@@ -10,11 +11,15 @@ import { SettingsPage } from './pages/SettingsPage';
 import { KYCPage } from './pages/KYC';
 import { CopyTradingPage } from './pages/CopyTrading';
 import { FundedAccountsPage } from './pages/FundedAccounts';
+import { ReferralPage } from './pages/Referral';
 import { AdminPage } from './pages/Admin';
 import { Layout } from './components/Layout';
 function AppContent() {
-  const { isAuthenticated, user, allUsers } = useStore();
+  const { isAuthenticated, user, allUsers, theme } = useStore();
   const [currentPage, setCurrentPage] = useState('dashboard');
+  
+  // Determine current auth page from URL
+  const authPath = window.location.pathname.split('/')[2]; // /auth/login or /auth/signup
 
   // ensure that when authentication state changes we land on dashboard
   React.useEffect(() => {
@@ -23,8 +28,18 @@ function AppContent() {
     }
   }, [isAuthenticated]);
 
+  // Re-render when theme changes to ensure all pages update
+  React.useEffect(() => {
+    // This effect just needs to depend on theme to cause re-renders
+  }, [theme]);
+
+  // Show separate Login or Signup pages
   if (!isAuthenticated) {
-    return <AuthPage />;
+    if (authPath === 'signup') {
+      return <SignupPage />;
+    }
+    // Default to login page
+    return <LoginPage />;
   }
 
   const renderPage = () => {
@@ -56,6 +71,8 @@ function AppContent() {
         return <CopyTradingPage />;
       case 'funded-accounts':
         return <FundedAccountsPage />;
+      case 'referral':
+        return <ReferralPage />;
       case 'admin':
         return <AdminPage />;
       case 'settings':

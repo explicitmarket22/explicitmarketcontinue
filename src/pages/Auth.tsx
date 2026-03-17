@@ -79,7 +79,7 @@ export function AuthPage() {
           </p>
         </div>
 
-        <Card className="border-gray-800 bg-gray-900/50 backdrop-blur">
+        <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 backdrop-blur">
           <CardHeader>
             <CardTitle className="text-xl text-center text-white">
               {isLogin ? 'Sign In to Account' : 'Create Live Account'}

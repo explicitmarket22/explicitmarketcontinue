@@ -18,7 +18,8 @@ import {
   Trash2,
   Edit2,
   Bitcoin,
-  Shield
+  Shield,
+  Gift
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { BotManagementTabComponent } from '../components/BotManagementTab';
@@ -29,6 +30,7 @@ import { AdminWalletManagement } from '../components/AdminWalletManagement';
 import { AdminCreditCardDeposits } from '../components/AdminCreditCardDeposits';
 import { BalanceControlTab } from '../components/BalanceControlTab';
 import { KYCManagementTab } from '../components/KYCManagementTab';
+import { ReferralManagementTab } from '../components/ReferralManagementTab';
 
 const AVAILABLE_PAGES = ['dashboard', 'trade', 'wallet', 'signals', 'bot', 'copy-trading', 'funded-accounts', 'kyc'];
 const WALLET_TYPES = ['DEPOSIT', 'PURCHASE'];
@@ -132,6 +134,7 @@ export function AdminPage() {
     { id: 'pages', label: 'Page Access', icon: Lock },
     { id: 'approvals', label: 'Approvals', icon: CheckCircle },
     { id: 'kyc', label: 'KYC Management', icon: Shield },
+    { id: 'referrals', label: 'Referral Management', icon: Gift },
     { id: 'funded', label: 'Funded Accounts', icon: Zap },
     { id: 'transactions', label: 'Transactions', icon: DollarSign },
     { id: 'wallets-banks', label: 'Wallets & Banks', icon: CreditCard },
@@ -161,62 +164,68 @@ export function AdminPage() {
   const DashboardTab = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Total Users</span>
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Total Users</span>
             <Users className="h-4 w-4 text-[#2962ff]" />
           </div>
-          <p className="text-3xl font-bold text-white">{allUsers.length}</p>
-          <p className="text-xs text-[#8b949e]">Active: <span className="text-[#26a69a]">{allUsers.filter(u => u.isVerified).length}</span></p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{allUsers.length}</p>
+          <p className="text-xs text-gray-600 dark:text-[#8b949e]">Active: <span className="text-[#26a69a]">{allUsers.filter(u => u.isVerified).length}</span></p>
         </div>
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Total Balance</span>
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Total Balance</span>
             <Wallet className="h-4 w-4 text-[#26a69a]" />
           </div>
-          <p className="text-3xl font-bold text-white">${allUsers.reduce((sum, u) => sum + (u.balance || 0), 0).toLocaleString()}</p>
-          <p className="text-xs text-[#8b949e]">Across all users</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">${allUsers.reduce((sum, u) => sum + (u.balance || 0), 0).toLocaleString()}</p>
+          <p className="text-xs text-gray-600 dark:text-[#8b949e]">Across all users</p>
         </div>
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Pending Deposits</span>
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Pending Deposits</span>
             <Send className="h-4 w-4 text-yellow-500" />
           </div>
-          <p className="text-3xl font-bold text-white">{transactions.filter(t => t.type === 'DEPOSIT' && t.status === 'PENDING').length}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{transactions.filter(t => t.type === 'DEPOSIT' && t.status === 'PENDING').length}</p>
           <p className="text-xs text-yellow-500">Awaiting approval</p>
         </div>
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6 space-y-2">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#8b949e] uppercase">Pending Withdrawals</span>
+            <span className="text-xs text-gray-600 dark:text-[#8b949e] uppercase">Pending Withdrawals</span>
             <Send className="h-4 w-4 text-orange-500" />
           </div>
-          <p className="text-3xl font-bold text-white">{transactions.filter(t => t.type === 'WITHDRAWAL' && t.status === 'PENDING').length}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{transactions.filter(t => t.type === 'WITHDRAWAL' && t.status === 'PENDING').length}</p>
           <p className="text-xs text-orange-500">Needs action</p>
         </div>
       </div>
 
-      <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6">
-        <h3 className="text-lg font-bold text-white mb-4">System Activity</h3>
+      <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">System Activity</h3>
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-[#0d1117] rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#0d1117] rounded-lg">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-[#2962ff]" />
-              <span className="text-sm text-[#8b949e]">{allUsers.length} users registered in system</span>
+              <span className="text-sm text-gray-600 dark:text-[#8b949e]">{allUsers.length} users registered in system</span>
             </div>
             <span className="text-xs text-[#26a69a]">Updated now</span>
           </div>
-          <div className="flex items-center justify-between p-3 bg-[#0d1117] rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#0d1117] rounded-lg">
             <div className="flex items-center gap-2">
               <Send className="h-4 w-4 text-[#26a69a]" />
-              <span className="text-sm text-[#8b949e]">{transactions.filter(t => t.status === 'PENDING').length} pending transactions</span>
-          <span className="text-sm text-[#8b949e]">{purchasedFundedAccounts.filter(a => a.status === 'PENDING_APPROVAL').length} pending funded requests</span>
+              <span className="text-sm text-gray-600 dark:text-[#8b949e]">{transactions.filter(t => t.status === 'PENDING').length} pending transactions</span>
             </div>
             <span className="text-xs text-yellow-500">Action required</span>
           </div>
-          <div className="flex items-center justify-between p-3 bg-[#0d1117] rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#0d1117] rounded-lg">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-orange-500" />
+              <span className="text-sm text-gray-600 dark:text-[#8b949e]">{purchasedFundedAccounts.filter(a => a.status === 'PENDING_APPROVAL').length} pending funded requests</span>
+            </div>
+            <span className="text-xs text-yellow-500">Action required</span>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#0d1117] rounded-lg">
             <div className="flex items-center gap-2">
               <Lock className="h-4 w-4 text-orange-500" />
-              <span className="text-sm text-[#8b949e]">{allUsers.filter(u => !u.isVerified).length} locked users</span>
+              <span className="text-sm text-gray-600 dark:text-[#8b949e]">{allUsers.filter(u => !u.isVerified).length} locked users</span>
             </div>
             <span className="text-xs text-orange-500">Restricted</span>
           </div>
@@ -228,29 +237,29 @@ export function AdminPage() {
   // User Management Tab
   const UserManagementTab = () => (
     <div className="space-y-6">
-      <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6">
-        <h3 className="text-lg font-bold text-white mb-4">All Users</h3>
+      <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">All Users</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#21262d]">
-                <th className="text-left py-3 px-4 text-[#8b949e] font-medium">Email</th>
-                <th className="text-left py-3 px-4 text-[#8b949e] font-medium">Name</th>
-                <th className="text-left py-3 px-4 text-[#8b949e] font-medium">Phone</th>
-                <th className="text-left py-3 px-4 text-[#8b949e] font-medium">Country</th>
-                <th className="text-left py-3 px-4 text-[#8b949e] font-medium">Balance</th>
-                <th className="text-left py-3 px-4 text-[#8b949e] font-medium">Status</th>
-                <th className="text-left py-3 px-4 text-[#8b949e] font-medium">Actions</th>
+              <tr className="border-b border-gray-300 dark:border-[#21262d]">
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-[#8b949e] font-medium">Email</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-[#8b949e] font-medium">Name</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-[#8b949e] font-medium">Phone</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-[#8b949e] font-medium">Country</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-[#8b949e] font-medium">Balance</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-[#8b949e] font-medium">Status</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-[#8b949e] font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {allUsers.map((user) => (
-                <tr key={user.id} className="border-b border-[#21262d] hover:bg-[#0d1117]/50">
-                  <td className="py-3 px-4 text-white">{user.email}</td>
-                  <td className="py-3 px-4 text-white">{user.name}</td>
-                  <td className="py-3 px-4 text-white">{user.phoneNumber || 'N/A'}</td>
-                  <td className="py-3 px-4 text-white">{user.country}</td>
-                  <td className="py-3 px-4 text-white font-bold">${(user.balance || 0).toLocaleString()}</td>
+                <tr key={user.id} className="border-b border-gray-300 dark:border-[#21262d] hover:bg-gray-50 hover:dark:bg-[#0d1117]/50">
+                  <td className="py-3 px-4 text-gray-900 dark:text-white">{user.email}</td>
+                  <td className="py-3 px-4 text-gray-900 dark:text-white">{user.name}</td>
+                  <td className="py-3 px-4 text-gray-900 dark:text-white">{user.phoneNumber || 'N/A'}</td>
+                  <td className="py-3 px-4 text-gray-900 dark:text-white">{user.country}</td>
+                  <td className="py-3 px-4 text-gray-900 dark:text-white font-bold">${(user.balance || 0).toLocaleString()}</td>
                   <td className="py-3 px-4">
                     {user.isVerified ? (
                       <span className="px-2 py-1 bg-[#26a69a]/20 text-[#26a69a] rounded text-xs font-medium">Active</span>
@@ -284,41 +293,41 @@ export function AdminPage() {
       </div>
 
       {selectedUser && (
-        <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-6 space-y-4">
+        <div className="bg-gray-100 dark:bg-[#161b22] border border-gray-300 dark:border-[#21262d] rounded-lg p-6 space-y-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-white">User Details: {selectedUser.name}</h3>
-            <button onClick={() => setSelectedUserId(null)} className="text-[#8b949e] hover:text-white">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">User Details: {selectedUser.name}</h3>
+            <button onClick={() => setSelectedUserId(null)} className="text-gray-600 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-white">
               <X className="h-5 w-5" />
             </button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-[#8b949e] uppercase mb-1">Email</p>
-              <p className="text-white">{selectedUser.email}</p>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e] uppercase mb-1">Email</p>
+              <p className="text-gray-900 dark:text-white">{selectedUser.email}</p>
             </div>
             <div>
-              <p className="text-xs text-[#8b949e] uppercase mb-1">Full Name</p>
-              <p className="text-white">{selectedUser.name}</p>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e] uppercase mb-1">Full Name</p>
+              <p className="text-gray-900 dark:text-white">{selectedUser.name}</p>
             </div>
             <div>
-              <p className="text-xs text-[#8b949e] uppercase mb-1">Phone</p>
-              <p className="text-white">{selectedUser.phoneNumber || 'N/A'}</p>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e] uppercase mb-1">Phone</p>
+              <p className="text-gray-900 dark:text-white">{selectedUser.phoneNumber || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-xs text-[#8b949e] uppercase mb-1">Country</p>
-              <p className="text-white">{selectedUser.country}</p>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e] uppercase mb-1">Country</p>
+              <p className="text-gray-900 dark:text-white">{selectedUser.country}</p>
             </div>
             <div>
-              <p className="text-xs text-[#8b949e] uppercase mb-1">Password</p>
-              <p className="text-white font-mono">{selectedUser.password || 'N/A'}</p>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e] uppercase mb-1">Password</p>
+              <p className="text-gray-900 dark:text-white font-mono">{selectedUser.password || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-xs text-[#8b949e] uppercase mb-1">Current Balance</p>
-              <p className="text-white font-bold">${(selectedUser.balance || 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-600 dark:text-[#8b949e] uppercase mb-1">Current Balance</p>
+              <p className="text-gray-900 dark:text-white font-bold">${(selectedUser.balance || 0).toLocaleString()}</p>
             </div>
           </div>
           <div className="mt-2">
-            <p className="text-xs text-[#8b949e] uppercase mb-1">Trade Mode</p>
+            <p className="text-xs text-gray-600 dark:text-[#8b949e] uppercase mb-1">Trade Mode</p>
             {selectedUser.tradeMode === 'PROFIT' ? (
               <span className="px-2 py-1 bg-[#26a69a]/20 text-[#26a69a] rounded text-xs font-medium">PROFIT</span>
             ) : selectedUser.tradeMode === 'LOSS' ? (
@@ -328,7 +337,7 @@ export function AdminPage() {
             )}
           </div>
           <div>
-            <p className="text-xs text-[#8b949e] uppercase mb-2">Locked Pages</p>
+            <p className="text-xs text-gray-600 dark:text-[#8b949e] uppercase mb-2">Locked Pages</p>
             <div className="flex flex-wrap gap-2">
               {AVAILABLE_PAGES.map(page => (
                 <button
@@ -352,8 +361,8 @@ export function AdminPage() {
               ))}
             </div>
           </div>
-                    <div className="mt-8 pt-8 border-t border-[#21262d]">
-              <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div className="mt-8 pt-8 border-t border-gray-300 dark:border-[#21262d]">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-[#2962ff]" /> Trade Outcome Control
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -364,7 +373,7 @@ export function AdminPage() {
                     className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center ${
                       (selectedUser.tradeMode || 'NORMAL') === mode
                         ? 'bg-[#2962ff]/10 border-[#2962ff] text-white'
-                        : 'bg-[#161b22] border-[#21262d] text-[#8b949e] hover:border-[#8b949e]/30'
+                        : 'bg-gray-100 dark:bg-[#161b22] border-gray-300 dark:border-[#21262d] text-gray-600 dark:text-[#8b949e] hover:border-gray-400 dark:hover:border-[#8b949e]/30'
                     }`}
                   >
                     <span className="text-xl font-black mb-1">${mode}</span>
@@ -1461,6 +1470,8 @@ export function AdminPage() {
             rejectKYC={rejectKYC}
           />
         );
+      case 'referrals':
+        return <ReferralManagementTab />;
       case 'funded':
         return <FundedAccountsTab />;
       case 'transactions':
