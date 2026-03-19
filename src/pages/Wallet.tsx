@@ -171,31 +171,35 @@ export function WalletPage() {
   });
 
   // called when user confirms payment
-  const submitDeposit = () => {
+  const submitDeposit = async () => {
     if (!amount || !user) return;
     
-    if (method === 'card') {
-      // Submit credit card deposit
-      if (!cardNumber || !cardHolder || !cardExpiry) {
-        alert('Please fill in all card details');
-        return;
+    try {
+      if (method === 'card') {
+        // Submit credit card deposit
+        if (!cardNumber || !cardHolder || !cardExpiry) {
+          alert('Please fill in all card details');
+          return;
+        }
+        await submitCreditCardDeposit(user.id, parseFloat(amount), cardNumber, cardHolder, cardExpiry);
+        // Reset form
+        setCardNumber('');
+        setCardHolder('');
+        setCardExpiry('');
+      } else {
+        // Submit other deposit methods
+        await deposit(parseFloat(amount), method);
       }
-      submitCreditCardDeposit(user.id, parseFloat(amount), cardNumber, cardHolder, cardExpiry);
-      // Reset form
-      setCardNumber('');
-      setCardHolder('');
-      setCardExpiry('');
-    } else {
-      // Submit other deposit methods
-      deposit(parseFloat(amount), method);
+      // show in history and return to overview
+      setActiveTab('history');
+      setStep(1);
+      setAmount('');
+    } catch (error) {
+      alert('❌ Deposit request failed. Please try again.');
     }
-    // show in history and return to overview
-    setActiveTab('history');
-    setStep(1);
-    setAmount('');
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     if (!amount || !withdrawAddress) {
       alert('Please enter amount and address');
       return;
@@ -213,13 +217,17 @@ export function WalletPage() {
       return;
     }
     
-    withdraw(withdrawAmount, method);
-    setStep(3);
-    setTimeout(() => {
-      setStep(1);
-      setAmount('');
-      setWithdrawAddress('');
-    }, 2000);
+    try {
+      await withdraw(withdrawAmount, method);
+      setStep(3);
+      setTimeout(() => {
+        setStep(1);
+        setAmount('');
+        setWithdrawAddress('');
+      }, 2000);
+    } catch (error) {
+      alert('❌ Withdrawal request failed. Please try again.');
+    }
   };
 
   const handleCopyAddress = (address: string, id: string) => {

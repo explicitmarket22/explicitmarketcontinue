@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   BarChart3,
@@ -45,7 +45,8 @@ export function AdminPage() {
     togglePageLock, 
     toggleUserLock,
     setUserTradeMode, 
-    transactions, 
+    transactions,
+    creditCardDeposits,
     approveTransaction, 
     rejectTransaction,
     purchasedBots,
@@ -118,6 +119,15 @@ export function AdminPage() {
 
   // Modal state for duration inputs
   const [openDurationModal, setOpenDurationModal] = useState<{ type: 'bot' | 'signal'; id: string } | null>(null);
+
+  // Debug: Log when admin data loads
+  useEffect(() => {
+    console.log('📊 Admin State Update:');
+    console.log(`  Users: ${allUsers.length}`);
+    console.log(`  Transactions: ${transactions.length}`);
+    console.log(`  Deposits: ${creditCardDeposits.length}`);
+    console.log(`  Funded Accounts: ${purchasedFundedAccounts.length}`);
+  }, [allUsers.length, transactions.length, creditCardDeposits.length, purchasedFundedAccounts.length]);
 
   const filteredUsers = allUsers.filter(u => 
     u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || 

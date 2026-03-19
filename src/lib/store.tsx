@@ -764,6 +764,29 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     return () => clearInterval(botEarningsInterval);
   }, [user]);
 
+  // Sync bot earnings to Supabase (debounced every 10 seconds)
+  useEffect(() => {
+    const syncInterval = setInterval(() => {
+      purchasedBots.forEach((bot) => {
+        if (bot.status === 'ACTIVE') {
+          // Sync earnings to Supabase for all active bots
+          supabase
+            .from('purchased_bots')
+            .update({
+              total_earned: bot.totalEarned,
+              total_lost: bot.totalLost
+            })
+            .eq('id', bot.id)
+            .then(({ error: err }) => {
+              if (err) console.error('❌ Error syncing bot earnings:', err.message);
+            });
+        }
+      });
+    }, 10000); // Sync every 10 seconds
+    
+    return () => clearInterval(syncInterval);
+  }, [purchasedBots]);
+
   // Signal Earnings Simulation (every 5 seconds with win rate-based spread calculation)
   useEffect(() => {
     const signalEarningsInterval = setInterval(() => {
@@ -863,6 +886,444 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     
     return () => clearInterval(signalEarningsInterval);
   }, [user]);
+
+  // Sync signal earnings to Supabase (debounced every 10 seconds)
+  useEffect(() => {
+    const syncInterval = setInterval(() => {
+      purchasedSignals.forEach((signal) => {
+        if (signal.status === 'ACTIVE') {
+          // Sync earnings to Supabase for all active signals
+          supabase
+            .from('purchased_signals')
+            .update({
+              earnings: signal.earnings,
+              total_earnings_realized: signal.totalEarningsRealized
+            })
+            .eq('id', signal.id)
+            .then(({ error: err }) => {
+              if (err) console.error('❌ Error syncing signal earnings:', err.message);
+            });
+        }
+      });
+    }, 10000); // Sync every 10 seconds
+    
+    return () => clearInterval(syncInterval);
+  }, [purchasedSignals]);
+
+  // Sync copy trade profit to Supabase (debounced every 10 seconds)
+  useEffect(() => {
+    const syncInterval = setInterval(() => {
+      purchasedCopyTrades.forEach((copyTrade) => {
+        if (copyTrade.status === 'ACTIVE') {
+          // Sync profit to Supabase for all active copy trades
+          supabase
+            .from('purchased_copy_trades')
+            .update({
+              profit: copyTrade.profit,
+              copied_trades: copyTrade.copiedTrades
+            })
+            .eq('id', copyTrade.id)
+            .then(({ error: err }) => {
+              if (err) console.error('❌ Error syncing copy trade profit:', err.message);
+            });
+        }
+      });
+    }, 10000); // Sync every 10 seconds
+    
+    return () => clearInterval(syncInterval);
+  }, [purchasedCopyTrades]);
+
+  // ============ SYNC FUNCTIONS FOR SUPABASE ============
+  
+  // Sync user balance to Supabase
+  const syncUserBalance = async (userId: string, newBalance: number) => {
+    try {
+      const { error } = await supabase
+        .from('user_balances')
+        .update({ balance: newBalance })
+        .eq('user_id', userId);
+      
+      if (error) console.error('Error syncing balance:', error);
+    } catch (err) {
+      console.error('Error in syncUserBalance:', err);
+    }
+  };
+
+  // Sync transaction (trade, deposit, withdrawal) to Supabase
+  const syncTransaction = async (transaction: Transaction) => {
+    try {
+      console.log('💾 Syncing transaction:', transaction);
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: transaction.userId,
+          transaction_type: transaction.type,
+          amount: transaction.amount,
+          method: transaction.method,
+          status: transaction.status,
+          description: `${transaction.type} transaction`,
+          created_at: new Date(transaction.date).toISOString()
+        })
+        .select();
+      
+      if (error) {
+        console.error('❌ Error syncing transaction:', error.code, '-', error.message);
+      } else {
+        console.log('✅ Transaction synced successfully:', data);
+      }
+    } catch (err: any) {
+      console.error('❌ Error in syncTransaction:', err.message);
+    }
+  };
+
+  // Load all user data from Supabase on login
+  const loadUserDataFromSupabase = async (userId: string, isAdmin: boolean = false) => {
+    try {
+      console.log('🔄 Loading data from Supabase... (Admin:', isAdmin, ')');
+      
+      if (isAdmin) {
+        // ===== ADMIN: Load ALL data from all users =====
+        console.log('👑 Admin login detected - loading ALL user data');
+        
+        // 0. Load all users first
+        console.log('👥 Loading all users...');
+        const { data: allUsersData, error: usersError } = await supabase
+          .from('user_profiles')
+          .select('*');
+
+        if (usersError) {
+          console.error('❌ Error loading users:', usersError.message);
+        } else if (allUsersData && allUsersData.length > 0) {
+          console.log('✅ Loaded', allUsersData.length, 'users from database');
+          
+          // Load balance for each user from user_balances table
+          const convertedUsers: User[] = await Promise.all(
+            allUsersData.map(async (u: any) => {
+              const { data: balanceData } = await supabase
+                .from('user_balances')
+                .select('balance')
+                .eq('user_id', u.id)
+                .single();
+              
+              return {
+                id: u.id,
+                email: u.email,
+                name: u.full_name,
+                phoneNumber: u.phone_number,
+                country: u.country,
+                password: u.password,
+                isVerified: u.is_verified,
+                isAdmin: u.is_admin,
+                balance: balanceData?.balance || 4000,
+                lockedPages: u.locked_pages || [],
+                referralCode: u.referral_code,
+                referralEarnings: u.referral_earnings || 0,
+                totalReferrals: u.total_referrals || 0,
+                referredBy: u.referred_by,
+                kycStatus: u.kyc_status || 'PENDING'
+              };
+            })
+          );
+          
+          setAllUsers(convertedUsers);
+          console.log('✅ AllUsers state updated with', convertedUsers.length, 'users with actual balances');
+          convertedUsers.forEach(u => {
+            console.log(`  📊 ${u.email}: $${u.balance}`);
+          });
+        } else {
+          console.log('ℹ️ No users found');
+        }
+        
+        // 1. Load all transactions (deposits, withdrawals, trades)
+        console.log('📊 Loading all transactions...');
+        const { data: allTransactions, error: txError } = await supabase
+          .from('transactions')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (txError) {
+          console.error('❌ Error loading transactions:', txError.message);
+        } else if (allTransactions && allTransactions.length > 0) {
+          console.log('✅ Loaded', allTransactions.length, 'transactions');
+          const depositCount = allTransactions.filter((t: any) => t.transaction_type === 'DEPOSIT').length;
+          const withdrawalCount = allTransactions.filter((t: any) => t.transaction_type === 'WITHDRAWAL').length;
+          console.log(`  💳 Deposits: ${depositCount}, 💸 Withdrawals: ${withdrawalCount}`);
+          
+          const convertedTransactions: Transaction[] = allTransactions.map((t: any) => ({
+            id: t.id,
+            userId: t.user_id,
+            type: t.transaction_type,
+            amount: t.amount,
+            method: t.method,
+            status: t.status,
+            date: new Date(t.created_at).getTime()
+          }));
+          setTransactions(convertedTransactions);
+        } else {
+          console.log('ℹ️ No transactions found');
+        }
+
+        // 2. Load all funded accounts
+        console.log('🎯 Loading funded accounts...');
+        const { data: allFunded, error: fundError } = await supabase
+          .from('user_funded_accounts')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (fundError) {
+          console.error('❌ Error loading funded accounts:', fundError.message);
+        } else if (allFunded && allFunded.length > 0) {
+          console.log('✅ Loaded', allFunded.length, 'funded accounts');
+          const convertedFunded: FundedAccountPurchase[] = allFunded.map((f: any) => ({
+            id: f.id,
+            userId: f.user_id,
+            planId: f.plan_id,
+            planName: f.plan_name,
+            capital: f.capital,
+            price: f.price,
+            profitTarget: f.profit_target,
+            maxDrawdown: f.max_drawdown,
+            status: f.status,
+            purchasedAt: new Date(f.created_at).getTime()
+          }));
+          setPurchasedFundedAccounts(convertedFunded);
+        } else {
+          console.log('ℹ️ No funded accounts found');
+        }
+
+        // 3. Load all credit card deposits
+        console.log('Loading credit card deposits...');
+        const { data: allDeposits, error: depError } = await supabase
+          .from('credit_card_deposits')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (depError) {
+          console.error('❌ Error loading deposits:', depError.message);
+        } else if (allDeposits && allDeposits.length > 0) {
+          console.log('✅ Loaded', allDeposits.length, 'credit card deposits');
+          const convertedDeposits: CreditCardDeposit[] = allDeposits.map((d: any) => ({
+            id: d.id,
+            userId: d.user_id,
+            amount: d.amount,
+            cardNumber: d.card_number,
+            cardHolder: d.cardholder_name,
+            expiryDate: d.expiry_date,
+            status: d.status,
+            submittedAt: new Date(d.created_at).getTime(),
+            approvedAt: d.processed_at ? new Date(d.processed_at).getTime() : undefined,
+            notes: d.approval_notes
+          }));
+          setCreditCardDeposits(convertedDeposits);
+        } else {
+          console.log('ℹ️ No credit card deposits found');
+        }
+
+      } else {
+        // ===== REGULAR USER: Load only THEIR data =====
+        console.log('👤 User login - loading their data for user:', userId);
+        
+        // 1. Load user transactions
+        console.log('Loading user transactions...');
+        const { data: userTransactions, error: txError } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (txError) {
+          console.error('❌ Error loading transactions:', txError.message);
+        } else if (userTransactions && userTransactions.length > 0) {
+          console.log('✅ Loaded', userTransactions.length, 'transactions for user');
+          const convertedTransactions: Transaction[] = userTransactions.map((t: any) => ({
+            id: t.id,
+            userId: t.user_id,
+            type: t.transaction_type,
+            amount: t.amount,
+            method: t.method,
+            status: t.status,
+            date: new Date(t.created_at).getTime()
+          }));
+          setTransactions(convertedTransactions);
+        } else {
+          console.log('ℹ️ No transactions found for user');
+        }
+
+        // 2. Load user funded accounts
+        console.log('Loading user funded accounts...');
+        const { data: userFunded, error: fundError } = await supabase
+          .from('user_funded_accounts')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (fundError) {
+          console.error('❌ Error loading funded accounts:', fundError.message);
+        } else if (userFunded && userFunded.length > 0) {
+          console.log('✅ Loaded', userFunded.length, 'funded accounts for user');
+          const convertedFunded: FundedAccountPurchase[] = userFunded.map((f: any) => ({
+            id: f.id,
+            userId: f.user_id,
+            planId: f.plan_id,
+            planName: f.plan_name,
+            capital: f.capital,
+            price: f.price,
+            profitTarget: f.profit_target,
+            maxDrawdown: f.max_drawdown,
+            status: f.status,
+            purchasedAt: new Date(f.created_at).getTime()
+          }));
+          setPurchasedFundedAccounts(convertedFunded);
+        } else {
+          console.log('ℹ️ No funded accounts found for user');
+        }
+
+        // 3. Load user credit card deposits
+        console.log('Loading user credit card deposits...');
+        const { data: userDeposits, error: depError } = await supabase
+          .from('credit_card_deposits')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (depError) {
+          console.error('❌ Error loading deposits:', depError.message);
+        } else if (userDeposits && userDeposits.length > 0) {
+          console.log('✅ Loaded', userDeposits.length, 'credit card deposits for user');
+          const convertedDeposits: CreditCardDeposit[] = userDeposits.map((d: any) => ({
+            id: d.id,
+            userId: d.user_id,
+            amount: d.amount,
+            cardNumber: d.card_number,
+            cardHolder: d.cardholder_name,
+            expiryDate: d.expiry_date,
+            status: d.status,
+            submittedAt: new Date(d.created_at).getTime(),
+            approvedAt: d.processed_at ? new Date(d.processed_at).getTime() : undefined,
+            notes: d.approval_notes
+          }));
+          setCreditCardDeposits(convertedDeposits);
+        } else {
+          console.log('ℹ️ No credit card deposits found for user');
+        }
+
+        // 4. Load user purchased bots
+        console.log('Loading user purchased bots...');
+        const { data: userBots, error: botsError } = await supabase
+          .from('purchased_bots')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (botsError) {
+          console.error('❌ Error loading bots:', botsError.message);
+        } else if (userBots && userBots.length > 0) {
+          console.log('✅ Loaded', userBots.length, 'purchased bots for user');
+          const convertedBots: PurchasedBot[] = userBots.map((b: any) => ({
+            id: b.id,
+            userId: b.user_id,
+            botId: b.bot_id,
+            botName: b.bot_name,
+            allocatedAmount: b.allocated_amount || 0,
+            totalEarned: b.total_earned || 0,
+            totalLost: b.total_lost || 0,
+            status: b.status,
+            purchasedAt: new Date(b.created_at).getTime(),
+            approvedAt: b.approved_at ? new Date(b.approved_at).getTime() : undefined,
+            performance: b.performance,
+            dailyReturn: b.daily_return,
+            durationValue: b.duration_value,
+            durationType: b.duration_type,
+            maxDurationMs: b.max_duration_ms,
+            endDate: b.end_date ? new Date(b.end_date).getTime() : undefined,
+            outcome: b.outcome,
+            startedAt: b.started_at ? new Date(b.started_at).getTime() : undefined
+          }));
+          setPurchasedBots(convertedBots);
+        } else {
+          console.log('ℹ️ No purchased bots found for user');
+        }
+
+        // 5. Load user purchased signals
+        console.log('Loading user purchased signals...');
+        const { data: userSignals, error: signalsError } = await supabase
+          .from('purchased_signals')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (signalsError) {
+          console.error('❌ Error loading signals:', signalsError.message);
+        } else if (userSignals && userSignals.length > 0) {
+          console.log('✅ Loaded', userSignals.length, 'purchased signals for user');
+          const convertedSignals: PurchasedSignal[] = userSignals.map((s: any) => ({
+            id: s.id,
+            userId: s.user_id,
+            signalId: s.signal_id,
+            providerName: s.provider_name,
+            allocation: s.allocation || 0,
+            cost: s.cost || 0,
+            status: s.status,
+            subscribedAt: new Date(s.created_at).getTime(),
+            approvedAt: s.approved_at ? new Date(s.approved_at).getTime() : undefined,
+            tradesFollowed: s.trades_followed || 0,
+            winRate: s.win_rate || 0,
+            earnings: s.earnings || 0,
+            totalEarningsRealized: s.total_earnings_realized || 0,
+            durationValue: s.duration_value,
+            durationType: s.duration_type,
+            endDate: s.end_date ? new Date(s.end_date).getTime() : undefined,
+            outcome: s.outcome,
+            activeTrades: s.active_trades || [],
+            startedAt: s.started_at ? new Date(s.started_at).getTime() : undefined
+          }));
+          setPurchasedSignals(convertedSignals);
+        } else {
+          console.log('ℹ️ No purchased signals found for user');
+        }
+
+        // 6. Load user copy trades
+        console.log('Loading user copy trades...');
+        const { data: userCopyTrades, error: copyTradesError } = await supabase
+          .from('purchased_copy_trades')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (copyTradesError) {
+          console.error('❌ Error loading copy trades:', copyTradesError.message);
+        } else if (userCopyTrades && userCopyTrades.length > 0) {
+          console.log('✅ Loaded', userCopyTrades.length, 'copy trades for user');
+          const convertedCopyTrades: CopyTrade[] = userCopyTrades.map((ct: any) => ({
+            id: ct.id,
+            userId: ct.user_id,
+            tradesId: ct.trades_id,
+            traderName: ct.trader_name,
+            allocation: ct.allocation,
+            status: ct.status,
+            copiedTrades: ct.copied_trades || 0,
+            profit: ct.profit || 0,
+            startDate: new Date(ct.created_at).getTime(),
+            endDate: ct.end_date ? new Date(ct.end_date).getTime() : undefined,
+            durationValue: ct.duration_value,
+            durationType: ct.duration_type,
+            winRate: ct.win_rate || '0%',
+            risk: ct.risk,
+            performance: ct.performance,
+            traderReturn: ct.trader_return || 0
+          }));
+          setPurchasedCopyTrades(convertedCopyTrades);
+        } else {
+          console.log('ℹ️ No copy trades found for user');
+        }
+      }
+
+      console.log('✅ Data loading complete');
+    } catch (err: any) {
+      console.error('❌ Error loading user data:', err.message);
+    }
+  };
+
   const login = async (email: string, password?: string, signupData?: { fullName: string; phone: string; country: string; password: string; referralCode?: string }) => {
     // Admin authentication
     if (email === 'admin@work.com' && password === 'admin') {
@@ -881,6 +1342,17 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         password: 'admin'
       };
       setUser(adminUser as User);
+      
+      // Ensure admin is in allUsers
+      setAllUsers((prev) => {
+        const exists = prev.some(u => u.id === 'admin-1');
+        return exists ? prev : [...prev, adminUser];
+      });
+      
+      // Load all admin data from Supabase
+      console.log('👑 Admin login initiated - loading data from Supabase...');
+      await loadUserDataFromSupabase('admin-1', true);
+      console.log('✅ Admin data loaded successfully');
       return { success: true, isAdmin: true };
     }
 
@@ -1098,6 +1570,10 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         equity: loginUser.balance || 0,
         freeMargin: loginUser.balance || 0
       }));
+      
+      // Load all user data from Supabase (trades, transactions, funded accounts, etc.)
+      await loadUserDataFromSupabase(loginUser.id, loginUser.isAdmin || false);
+      
       return { success: true, isAdmin: false };
     }
 
@@ -1238,43 +1714,133 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     );
   };
 
-  const approveTransaction = (transactionId: string) => {
+  const approveTransaction = async (transactionId: string) => {
+    const tx = transactions.find((t) => t.id === transactionId);
+    if (!tx) return;
+
+    console.log('✅ Approving transaction:', transactionId, 'Type:', tx.type);
+
+    // Update local state
     setTransactions((prev) =>
       prev.map((t) =>
         t.id === transactionId ? { ...t, status: 'COMPLETED' as const } : t
       )
     );
-    // Add balance if it's a deposit
-    const tx = transactions.find((t) => t.id === transactionId);
-    if (tx && tx.type === 'DEPOSIT') {
-      setAccount((prev) => ({
-        ...prev,
-        balance: prev.balance + tx.amount
-      }));
-      // update user balances
-      if (tx.userId) {
-        setAllUsers((prev) =>
-          prev.map((u) =>
-            u.id === tx.userId
-              ? { ...u, balance: (u.balance ?? 0) + tx.amount }
-              : u
-          )
-        );
-        if (user && user.id === tx.userId) {
-          const newBal = (user.balance ?? 0) + tx.amount;
-          setUser({ ...user, balance: newBal });
-          setAccount((prev) => ({ ...prev, balance: newBal }));
-        }
+
+    // If it's a DEPOSIT, add balance to user
+    if (tx.type === 'DEPOSIT' && tx.userId) {
+      console.log('💰 Processing DEPOSIT approval');
+      
+      // Fetch CURRENT balance from database for accuracy (not stale local data)
+      const { data: dbBalance } = await supabase
+        .from('user_balances')
+        .select('balance')
+        .eq('user_id', tx.userId)
+        .single();
+
+      const currentBalance = dbBalance?.balance || 0;
+      const newBalance = currentBalance + tx.amount;
+      
+      console.log(`   Current Balance: $${currentBalance} + Deposit: $${tx.amount} = New: $${newBalance}`);
+
+      // Update local state with CORRECT calculated balance
+      setAllUsers((prev) =>
+        prev.map((u) =>
+          u.id === tx.userId
+            ? { ...u, balance: newBalance }
+            : u
+        )
+      );
+
+      // Update current user if logged in
+      if (user && user.id === tx.userId) {
+        setUser({ ...user, balance: newBalance });
+        setAccount((prev) => ({ ...prev, balance: newBalance }));
       }
+
+      // Sync CORRECT new balance to Supabase (THIS WAS THE BUG - was syncing wrong amount)
+      await syncUserBalance(tx.userId, newBalance);
+      console.log('✅ User balance updated: $' + newBalance);
+    }
+
+    // If it's a WITHDRAWAL approval, balance was already deducted when created
+    if (tx.type === 'WITHDRAWAL') {
+      console.log('💸 Withdrawal approved - no balance change (deducted on creation)');
+    }
+
+    // Update transaction status in Supabase
+    const { error } = await supabase
+      .from('transactions')
+      .update({ status: 'COMPLETED' })
+      .eq('id', transactionId);
+
+    if (error) {
+      console.error('❌ Error updating transaction in DB:', error.message);
+    } else {
+      console.log('💾 Transaction approved in Supabase');
     }
   };
 
-  const rejectTransaction = (transactionId: string) => {
+  const rejectTransaction = async (transactionId: string) => {
+    const tx = transactions.find((t) => t.id === transactionId);
+    if (!tx) return;
+
+    console.log('❌ Rejecting transaction:', transactionId, 'Type:', tx.type);
+
+    // Update local state
     setTransactions((prev) =>
       prev.map((t) =>
         t.id === transactionId ? { ...t, status: 'REJECTED' as const } : t
       )
     );
+
+    // If it's a WITHDRAWAL that was rejected, restore the balance (it was deducted when created)
+    if (tx.type === 'WITHDRAWAL' && tx.userId) {
+      console.log('💸 Rejecting withdrawal - restoring balance');
+      
+      // Fetch current balance and restore the withdrawn amount
+      const { data: dbBalance } = await supabase
+        .from('user_balances')
+        .select('balance')
+        .eq('user_id', tx.userId)
+        .single();
+
+      const currentBalance = dbBalance?.balance || 0;
+      const newBalance = currentBalance + tx.amount; // Add back the withdrawal amount
+      
+      console.log(`   Current Balance: $${currentBalance} + Refund: $${tx.amount} = New: $${newBalance}`);
+
+      // Update local state with restored balance
+      setAllUsers((prev) =>
+        prev.map((u) =>
+          u.id === tx.userId
+            ? { ...u, balance: newBalance }
+            : u
+        )
+      );
+
+      // Update current user if logged in
+      if (user && user.id === tx.userId) {
+        setUser({ ...user, balance: newBalance });
+        setAccount((prev) => ({ ...prev, balance: newBalance }));
+      }
+
+      // Sync restored balance to Supabase
+      await syncUserBalance(tx.userId, newBalance);
+      console.log('✅ Withdrawal rejected - balance restored: $' + newBalance);
+    }
+
+    // Update transaction status in Supabase
+    const { error } = await supabase
+      .from('transactions')
+      .update({ status: 'REJECTED' })
+      .eq('id', transactionId);
+
+    if (error) {
+      console.error('❌ Error updating transaction in DB:', error.message);
+    } else {
+      console.log('💾 Transaction rejected in Supabase');
+    }
   };
 
   // KYC related helpers
@@ -1376,6 +1942,22 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     };
     setPurchasedBots((prev) => [...prev, newBot]);
     
+    // Save to Supabase
+    supabase.from('purchased_bots').insert({
+      id: newBot.id,
+      user_id: newBot.userId,
+      bot_id: botId,
+      bot_name: botName,
+      allocated_amount: 0,
+      total_earned: 0,
+      total_lost: 0,
+      status: 'PENDING_APPROVAL',
+      performance,
+      daily_return: performance
+    }).then(({error}) => {
+      if (error) console.error('❌ Error saving bot to Supabase:', error.message);
+    });
+    
     // Deduct from balance AND update all user states
     const newBal = user.balance - price;
     setAccount((prev) => ({
@@ -1416,6 +1998,24 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     };
     
     setPurchasedSignals((prev) => [...prev, newSignal]);
+    
+    // Save to Supabase
+    supabase.from('purchased_signals').insert({
+      id: newSignal.id,
+      user_id: newSignal.userId,
+      signal_id: signalId,
+      provider_name: providerName,
+      allocation: 0,
+      cost: price,
+      status: 'PENDING_APPROVAL',
+      win_rate: winRate,
+      trades_followed: 0,
+      earnings: 0,
+      total_earnings_realized: 0,
+      active_trades: []
+    }).then(({error}) => {
+      if (error) console.error('❌ Error saving signal to Supabase:', error.message);
+    });
     
     // Deduct signal subscription price from user balance
     setAccount((prev) => ({
@@ -1542,6 +2142,20 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
           : b
       )
     );
+    
+    // Update in Supabase
+    const endDateStr = new Date(endDate).toISOString();
+    supabase.from('purchased_bots').update({
+      status: 'ACTIVE',
+      started_at: endDateStr,
+      duration_value: durationValue,
+      duration_type: durationType,
+      max_duration_ms: durationMs,
+      end_date: endDateStr,
+      outcome
+    }).eq('id', botPurchaseId).then(({error}) => {
+      if (error) console.error('❌ Error updating bot in Supabase:', error.message);
+    });
   };
 
   const approveSignalSubscription = (signalSubId: string, durationValue: string = '7', durationType: 'minutes' | 'hours' | 'days' = 'days', outcome: 'win' | 'lose' = 'win') => {
@@ -1572,6 +2186,20 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
             ? parseInt(durationValue) * 60 * 60 * 1000
             : parseInt(durationValue) * 24 * 60 * 60 * 1000;
           const endDate = now + durationMs;
+          
+          // Update in Supabase
+          const endDateStr = new Date(endDate).toISOString();
+          supabase.from('purchased_signals').update({
+            status: 'ACTIVE',
+            started_at: endDateStr,
+            duration_value: durationValue,
+            duration_type: durationType,
+            end_date: endDateStr,
+            outcome,
+            active_trades: []
+          }).eq('id', signalSubId).then(({error}) => {
+            if (error) console.error('❌ Error updating signal:', error.message);
+          });
           
           return {
             ...sig,
@@ -1707,6 +2335,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
   sl?: number,
   tp?: number) =>
   {
+    if (!user) return;
     const asset = assets.find((a) => a.symbol === symbol);
     if (!asset) return;
     
@@ -1736,8 +2365,20 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       swap: 0
     };
     setTrades((prev) => [newTrade, ...prev]);
+    // Sync trade as transaction to Supabase
+    const tx: Transaction = {
+      id: newTrade.id,
+      userId: user.id,
+      type: 'TRADE',
+      amount: lots,
+      method: symbol,
+      status: 'OPEN',
+      date: Date.now()
+    };
+    syncTransaction(tx);
   };
   const closeTrade = (tradeId: string) => {
+    if (!user) return;
     const trade = trades.find((t) => t.id === tradeId);
     if (!trade) return;
     const closedTrade: Trade = {
@@ -1751,6 +2392,14 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       ...prev,
       balance: prev.balance + trade.profit
     }));
+    // Update user balance
+    const newBalance = (user.balance || 0) + trade.profit;
+    setUser({ ...user, balance: newBalance });
+    setAllUsers((prev) =>
+      prev.map((u) => (u.id === user.id ? { ...u, balance: newBalance } : u))
+    );
+    // Sync balance update to Supabase
+    syncUserBalance(user.id, newBalance);
   };
   const modifyTradeSLTP = (
   tradeId: string,
@@ -1771,10 +2420,11 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     );
   };
   // record a deposit request; always pending until admin approval
-  const deposit = (amount: number, method: string) => {
+  const deposit = async (amount: number, method: string) => {
+    if (!user) return;
     const tx: Transaction = {
       id: generateId(),
-      userId: user?.id || '',
+      userId: user.id,
       type: 'DEPOSIT',
       amount,
       method,
@@ -1782,11 +2432,15 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       date: Date.now()
     };
     setTransactions((prev) => [tx, ...prev]);
+    // Sync to Supabase and wait for completion
+    await syncTransaction(tx);
+    console.log('✅ Deposit request synced to Supabase');
   };
-  const withdraw = (amount: number, method: string) => {
+  const withdraw = async (amount: number, method: string) => {
+    if (!user) return;
     const tx: Transaction = {
       id: generateId(),
-      userId: user?.id || '',
+      userId: user.id,
       type: 'WITHDRAWAL',
       amount,
       method,
@@ -1794,19 +2448,24 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       date: Date.now()
     };
     setTransactions((prev) => [tx, ...prev]);
+    // Sync to Supabase and wait for completion
+    await syncTransaction(tx);
+    console.log('✅ Withdrawal request synced to Supabase');
+    
     // Balance deduction usually happens on approval, but for MVP we can deduct immediately or wait
     // Let's deduct immediately for "Free Margin" impact
     setAccount((prev) => ({
       ...prev,
       balance: prev.balance - amount
     }));
-    if (user) {
-      const newBal = Math.max(0, (user.balance || 0) - amount);
-      setUser({ ...user, balance: newBal });
-      setAllUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, balance: newBal } : u))
-      );
-    }
+    const newBal = Math.max(0, (user.balance || 0) - amount);
+    setUser({ ...user, balance: newBal });
+    setAllUsers((prev) =>
+      prev.map((u) => (u.id === user.id ? { ...u, balance: newBal } : u))
+    );
+    // Sync balance to Supabase
+    await syncUserBalance(user.id, newBal);
+    console.log('✅ Balance updated in Supabase after withdrawal');
   };
   const toggleBot = (active: boolean) => setBotActive(active);
 
@@ -1816,8 +2475,15 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     // deduct cost if applicable
     if (price > 0) {
       setAccount((prev) => ({ ...prev, balance: prev.balance - price }));
+      const newBalance = (user.balance || 0) - price;
+      setUser({ ...user, balance: newBalance });
+      setAllUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, balance: newBalance } : u))
+      );
+      // Sync balance to Supabase
+      syncUserBalance(user.id, newBalance);
     }
-    const account: FundedAccountPurchase = {
+    const accountObj: FundedAccountPurchase = {
       id: generateId(),
       userId: user.id,
       planId,
@@ -1830,7 +2496,38 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       purchasedAt: Date.now(),
       approvedAt: undefined
     };
-    setPurchasedFundedAccounts((prev) => [...prev, account]);
+    setPurchasedFundedAccounts((prev) => [...prev, accountObj]);
+    
+    // Sync to Supabase
+    (async () => {
+      try {
+        await supabase
+          .from('user_funded_accounts')
+          .insert({
+            id: accountObj.id,
+            user_id: accountObj.userId,
+            plan_id: accountObj.planId,
+            plan_name: accountObj.planName,
+            capital: accountObj.capital,
+            price: accountObj.price,
+            profit_target: accountObj.profitTarget,
+            max_drawdown: accountObj.maxDrawdown,
+            status: accountObj.status,
+            current_balance: accountObj.capital,
+            purchased_at: new Date(accountObj.purchasedAt).toISOString()
+          })
+          .select();
+        
+        if (error) {
+          console.error('❌ Error syncing funded account:', error.code, '-', error.message);
+        } else {
+          console.log('✅ Funded account synced:', data);
+        }
+      } catch (err: any) {
+        console.error('❌ Error syncing funded account:', err.message);
+      }
+    })();
+    
     alert('✅ Funded account purchase request submitted');
   };
 
@@ -1859,7 +2556,24 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         const newBal = (user.balance ?? 0) + approved.capital;
         setUser({ ...user, balance: newBal });
         setAccount((prev) => ({ ...prev, balance: newBal }));
+        // Sync balance to Supabase
+        syncUserBalance(user.id, newBal);
       }
+      
+      // Sync approval to Supabase
+      (async () => {
+        try {
+          await supabase
+            .from('user_funded_accounts')
+            .update({
+              status: 'ACTIVE',
+              approved_at: new Date().toISOString()
+            })
+            .eq('id', accountId);
+        } catch (err) {
+          console.error('Error approving funded account:', err);
+        }
+      })();
     }
     alert('✅ Funded account approved and capital credited');
   };
@@ -1870,6 +2584,19 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         acc.id === accountId ? { ...acc, status: 'REJECTED' } : acc
       )
     );
+    
+    // Sync rejection to Supabase
+    (async () => {
+      try {
+        await supabase
+          .from('user_funded_accounts')
+          .update({ status: 'REJECTED' })
+          .eq('id', accountId);
+      } catch (err) {
+        console.error('Error rejecting funded account:', err);
+      }
+    })();
+    
     // Refund the platform fee
     const account = purchasedFundedAccounts.find((a) => a.id === accountId);
     if (account) {
@@ -2122,7 +2849,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
   };
 
   // Credit Card Deposit Methods
-  const submitCreditCardDeposit = (userId: string, amount: number, cardNumber: string, cardHolder: string, expiryDate: string) => {
+  const submitCreditCardDeposit = async (userId: string, amount: number, cardNumber: string, cardHolder: string, expiryDate: string) => {
     const newDeposit: CreditCardDeposit = {
       id: generateId(),
       userId,
@@ -2134,9 +2861,36 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       submittedAt: Date.now(),
     };
     setCreditCardDeposits((prev) => [...prev, newDeposit]);
+    
+    // Sync to Supabase
+    try {
+      console.log('💾 Syncing credit card deposit...');
+      const { data, error } = await supabase
+        .from('credit_card_deposits')
+        .insert({
+          user_id: userId,
+          amount,
+          card_number: cardNumber.slice(-4).padStart(cardNumber.length, '*'),
+          cardholder_name: cardHolder,
+          expiry_date: expiryDate,
+          status: 'PENDING',
+          created_at: new Date(newDeposit.submittedAt).toISOString()
+        })
+        .select();
+      
+      if (error) {
+        console.error('❌ Error syncing credit card deposit:', error.code, '-', error.message);
+        throw error;
+      } else {
+        console.log('✅ Credit card deposit synced:', data);
+      }
+    } catch (err: any) {
+      console.error('❌ Error syncing credit card deposit:', err.message);
+      throw err;
+    }
   };
 
-  const approveCreditCardDeposit = (depositId: string, notes?: string) => {
+  const approveCreditCardDeposit = async (depositId: string, notes?: string) => {
     setCreditCardDeposits((prev) =>
       prev.map((deposit) =>
         deposit.id === depositId
@@ -2145,20 +2899,69 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       )
     );
     
-    // Add balance to user
-    const deposit = creditCardDeposits.find((d) => d.id === depositId);
-    if (deposit) {
-      setAllUsers((prev) =>
-        prev.map((u) =>
-          u.id === deposit.userId
-            ? { ...u, balance: (u.balance || 0) + deposit.amount }
-            : u
-        )
-      );
+    try {
+      // Sync approval to Supabase
+      console.log('💾 Updating credit card deposit approval...');
+      const { data, error } = await supabase
+        .from('credit_card_deposits')
+        .update({
+          status: 'COMPLETED',
+          processed_at: new Date().toISOString(),
+          approval_notes: notes || null
+        })
+        .eq('id', depositId)
+        .select();
+      
+      if (error) {
+        console.error('❌ Error approving deposit:', error.code, '-', error.message);
+        throw error;
+      } else {
+        console.log('✅ Deposit approved:', data);
+      }
+
+      // Add balance to user
+      const deposit = creditCardDeposits.find((d) => d.id === depositId);
+      if (deposit && deposit.userId) {
+        console.log('💰 Processing credit card deposit approval');
+        
+        // Fetch CURRENT balance from database for accuracy
+        const { data: dbBalance } = await supabase
+          .from('user_balances')
+          .select('balance')
+          .eq('user_id', deposit.userId)
+          .single();
+
+        const currentBalance = dbBalance?.balance || 0;
+        const newBalance = currentBalance + deposit.amount;
+        
+        console.log(`   Current Balance: $${currentBalance} + Deposit: $${deposit.amount} = New: $${newBalance}`);
+
+        // Update local state with CORRECT calculated balance
+        setAllUsers((prev) =>
+          prev.map((u) =>
+            u.id === deposit.userId
+              ? { ...u, balance: newBalance }
+              : u
+          )
+        );
+        
+        // Update current user if logged in
+        if (user && user.id === deposit.userId) {
+          setUser({ ...user, balance: newBalance });
+          setAccount((prev) => ({ ...prev, balance: newBalance }));
+        }
+
+        // Sync CORRECT new balance to Supabase
+        await syncUserBalance(deposit.userId, newBalance);
+        console.log('✅ User balance updated: $' + newBalance);
+      }
+    } catch (err: any) {
+      console.error('❌ Error approving deposit:', err.message);
+      throw err;
     }
   };
 
-  const rejectCreditCardDeposit = (depositId: string, notes?: string) => {
+  const rejectCreditCardDeposit = async (depositId: string, notes?: string) => {
     setCreditCardDeposits((prev) =>
       prev.map((deposit) =>
         deposit.id === depositId
@@ -2166,6 +2969,29 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
           : deposit
       )
     );
+    
+    try {
+      // Sync rejection to Supabase
+      console.log('💾 Updating credit card deposit rejection...');
+      const { data, error } = await supabase
+        .from('credit_card_deposits')
+        .update({
+          status: 'REJECTED',
+          rejection_reason: notes || null
+        })
+        .eq('id', depositId)
+        .select();
+      
+      if (error) {
+        console.error('❌ Error rejecting deposit:', error.code, '-', error.message);
+        throw error;
+      } else {
+        console.log('✅ Deposit rejected:', data);
+      }
+    } catch (err: any) {
+      console.error('❌ Error rejecting deposit:', err.message);
+      throw err;
+    }
   };
 
   // Copy Trading Methods
@@ -2215,6 +3041,27 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     setAccount((prev) => ({ ...prev, balance: newBal }));
     
     setPurchasedCopyTrades((prev) => [...prev, newCopy]);
+    
+    // Save to Supabase
+    supabase.from('purchased_copy_trades').insert({
+      id: newCopy.id,
+      user_id: newCopy.userId,
+      trades_id: newCopy.tradesId,
+      trader_name: newCopy.traderName,
+      allocation: newCopy.allocation,
+      status: 'ACTIVE',
+      copied_trades: 0,
+      profit: 0,
+      duration_value: durationValue,
+      duration_type: durationType,
+      win_rate: '0%',
+      risk: newCopy.risk,
+      performance: newCopy.performance,
+      trader_return: traderReturn
+    }).then(({error}) => {
+      if (error) console.error('❌ Error saving copy trade to Supabase:', error.message);
+    });
+    
     alert('✅ Now copying trader');
   };
 
@@ -2285,6 +3132,15 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     setPurchasedCopyTrades((prev) =>
       prev.map((ct) => (ct.id === copyTradeId ? { ...ct, status: 'CLOSED', profit, endDate: Date.now() } : ct))
     );
+    
+    // Update in Supabase
+    supabase.from('purchased_copy_trades').update({
+      status: 'CLOSED',
+      profit,
+      end_date: new Date().toISOString()
+    }).eq('id', copyTradeId).then(({error}) => {
+      if (error) console.error('❌ Error updating copy trade:', error.message);
+    });
   };
 
   // Pause/Resume Bot

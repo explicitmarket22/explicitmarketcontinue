@@ -1,0 +1,12 @@
+=== Testing Supabase Inserts ===
+
+1️⃣ Testing transactions table...
+   ❌ Error: 22P02 - invalid input syntax for type uuid: "test-user-id"
+
+2️⃣ Testing credit_card_deposits table...
+   ❌ Error: 22P02 - invalid input syntax for type uuid: "test-user-id"
+
+3️⃣ Testing user_funded_accounts table...
+   ❌ Error: 22P02 - invalid input syntax for type uuid: "plan-1"
+
+✅ Test complete

@@ -13,6 +13,7 @@ import { CopyTradingPage } from './pages/CopyTrading';
 import { FundedAccountsPage } from './pages/FundedAccounts';
 import { ReferralPage } from './pages/Referral';
 import { AdminPage } from './pages/Admin';
+import { HistoryPage } from './pages/History';
 import { Layout } from './components/Layout';
 function AppContent() {
   const { isAuthenticated, user, allUsers, theme } = useStore();
@@ -73,6 +74,8 @@ function AppContent() {
         return <FundedAccountsPage />;
       case 'referral':
         return <ReferralPage />;
+      case 'history':
+        return <HistoryPage />;
       case 'admin':
         return <AdminPage />;
       case 'settings':

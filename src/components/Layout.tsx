@@ -13,7 +13,9 @@ import {
   Users,
   X,
   Zap,
-  Gift } from
+  Gift,
+  Calendar,
+} from
 'lucide-react';
 import { cn } from '../lib/utils';
 interface LayoutProps {
@@ -64,6 +66,11 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
       id: 'referral',
       label: 'Referral',
       icon: Gift
+    },
+    {
+      id: 'history',
+      label: 'History',
+      icon: Calendar
     },
     {
       id: 'kyc',
