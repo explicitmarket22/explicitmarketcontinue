@@ -128,6 +128,19 @@ interface StoreContextType {
   purchasedSignals: PurchasedSignal[];
   purchasedCopyTrades: CopyTrade[];
   purchasedFundedAccounts: FundedAccountPurchase[];
+  recentTrades: Array<{
+    id: string;
+    userId: string;
+    symbol: string;
+    type: 'BUY' | 'SELL';
+    volume: number;
+    entryPrice: number;
+    closePrice: number;
+    profit: number;
+    openedAt: number;
+    closedAt?: number;
+    status: 'OPEN' | 'CLOSED';
+  }>;
   botTemplates: BotTemplate[];
   signalTemplates: SignalTemplate[];
   copyTradeTemplates: CopyTradeTemplate[];
@@ -154,6 +167,7 @@ interface StoreContextType {
   deposit: (amount: number, method: string) => void;
   withdraw: (amount: number, method: string) => void;
   toggleBot: (active: boolean) => void;
+  recordTrade: (symbol: string, type: 'BUY' | 'SELL', volume: number, entryPrice: number, closePrice: number) => void;
   // Bot/Signal Purchase Methods
   purchaseBot: (botId: string, botName: string, price: number, performance: number) => void;
   purchaseSignal: (signalId: string, providerName: string, allocation: number, winRate: number) => void;
@@ -264,6 +278,20 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
   const [purchasedSignals, setPurchasedSignals] = useState<PurchasedSignal[]>([]);
   const [purchasedCopyTrades, setPurchasedCopyTrades] = useState<CopyTrade[]>([]);
   const [purchasedFundedAccounts, setPurchasedFundedAccounts] = useState<FundedAccountPurchase[]>([]);
+  // Recent Trades for History
+  const [recentTrades, setRecentTrades] = useState<Array<{
+    id: string;
+    userId: string;
+    symbol: string;
+    type: 'BUY' | 'SELL';
+    volume: number;
+    entryPrice: number;
+    closePrice: number;
+    profit: number;
+    openedAt: number;
+    closedAt?: number;
+    status: 'OPEN' | 'CLOSED';
+  }>>([]);
   const [botTemplates, setBotTemplates] = useState<BotTemplate[]>([]);
   const [signalTemplates, setSignalTemplates] = useState<SignalTemplate[]>([]);
   const [copyTradeTemplates, setCopyTradeTemplates] = useState<CopyTradeTemplate[]>([]);
@@ -766,26 +794,33 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
 
   // Sync bot earnings to Supabase (debounced every 10 seconds)
   useEffect(() => {
-    const syncInterval = setInterval(() => {
-      purchasedBots.forEach((bot) => {
+    const syncInterval = setInterval(async () => {
+      if (!user) return; // Only sync if user is logged in
+      
+      for (const bot of purchasedBots) {
         if (bot.status === 'ACTIVE') {
           // Sync earnings to Supabase for all active bots
-          supabase
+          const { data, error } = await supabase
             .from('purchased_bots')
             .update({
               total_earned: bot.totalEarned,
-              total_lost: bot.totalLost
+              total_lost: bot.totalLost,
+              updated_at: new Date().toISOString()
             })
             .eq('id', bot.id)
-            .then(({ error: err }) => {
-              if (err) console.error('❌ Error syncing bot earnings:', err.message);
-            });
+            .eq('user_id', user.id); // Important for RLS policies
+          
+          if (error) {
+            console.error('❌ Error syncing bot earnings for', bot.botName, ':', error.message);
+          } else {
+            console.log('✅ Bot earnings synced:', bot.botName, 'Earned: $' + bot.totalEarned.toFixed(2));
+          }
         }
-      });
+      }
     }, 10000); // Sync every 10 seconds
     
     return () => clearInterval(syncInterval);
-  }, [purchasedBots]);
+  }, [purchasedBots, user]);
 
   // Signal Earnings Simulation (every 5 seconds with win rate-based spread calculation)
   useEffect(() => {
@@ -889,49 +924,70 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
 
   // Sync signal earnings to Supabase (debounced every 10 seconds)
   useEffect(() => {
-    const syncInterval = setInterval(() => {
-      purchasedSignals.forEach((signal) => {
+    const syncInterval = setInterval(async () => {
+      if (!user) return; // Only sync if user is logged in
+      
+      for (const signal of purchasedSignals) {
         if (signal.status === 'ACTIVE') {
           // Sync earnings to Supabase for all active signals
-          supabase
+          const { data, error } = await supabase
             .from('purchased_signals')
             .update({
               earnings: signal.earnings,
-              total_earnings_realized: signal.totalEarningsRealized
+              total_earnings_realized: signal.totalEarningsRealized,
+              updated_at: new Date().toISOString()
             })
             .eq('id', signal.id)
-            .then(({ error: err }) => {
-              if (err) console.error('❌ Error syncing signal earnings:', err.message);
-            });
+            .eq('user_id', user.id); // Important for RLS policies
+          
+          if (error) {
+            console.error('❌ Error syncing signal earnings for', signal.providerName, ':', error.message);
+          } else {
+            console.log('✅ Signal earnings synced:', signal.providerName, 'Earnings: $' + signal.earnings.toFixed(2));
+          }
         }
-      });
+      }
     }, 10000); // Sync every 10 seconds
     
     return () => clearInterval(syncInterval);
-  }, [purchasedSignals]);
+  }, [purchasedSignals, user]);
 
   // Sync copy trade profit to Supabase (debounced every 10 seconds)
   useEffect(() => {
-    const syncInterval = setInterval(() => {
-      purchasedCopyTrades.forEach((copyTrade) => {
+    const syncInterval = setInterval(async () => {
+      if (!user) return; // Only sync if user is logged in
+      
+      for (const copyTrade of purchasedCopyTrades) {
         if (copyTrade.status === 'ACTIVE') {
           // Sync profit to Supabase for all active copy trades
-          supabase
+          const { data, error } = await supabase
             .from('purchased_copy_trades')
             .update({
               profit: copyTrade.profit,
-              copied_trades: copyTrade.copiedTrades
+              copied_trades: copyTrade.copiedTrades,
+              updated_at: new Date().toISOString()
             })
             .eq('id', copyTrade.id)
-            .then(({ error: err }) => {
-              if (err) console.error('❌ Error syncing copy trade profit:', err.message);
-            });
+            .eq('user_id', user.id); // Important for RLS policies
+          
+          if (error) {
+            console.error('❌ Error syncing copy trade profit for', copyTrade.traderName, ':', error.message);
+          } else {
+            console.log('✅ Copy trade profit synced:', copyTrade.traderName, 'Profit: $' + copyTrade.profit.toFixed(2));
+          }
         }
-      });
+      }
     }, 10000); // Sync every 10 seconds
     
     return () => clearInterval(syncInterval);
-  }, [purchasedCopyTrades]);
+  }, [purchasedCopyTrades, user]);
+
+  // Sync recent trades to Supabase (new trades are added via recordTrade function)
+  useEffect(() => {
+    // Note: Recent trades are synced individually via recordTrade function
+    // This effect can be used for periodic updates if needed
+    return () => {};
+  }, [recentTrades, user]);
 
   // ============ SYNC FUNCTIONS FOR SUPABASE ============
   
@@ -1315,6 +1371,39 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
           setPurchasedCopyTrades(convertedCopyTrades);
         } else {
           console.log('ℹ️ No copy trades found for user');
+        }
+
+        // 7. Load recent trades history
+        console.log('Loading recent trades...');
+        const { data: userRecentTrades, error: tradesError } = await supabase
+          .from('recent_trades')
+          .select('*')
+          .eq('user_id', userId)
+          .order('closed_at', { ascending: false })
+          .limit(100); // Load last 100 trades
+
+        if (tradesError) {
+          console.log('ℹ️ No recent trades table or data:', tradesError.message);
+          setRecentTrades([]);
+        } else if (userRecentTrades && userRecentTrades.length > 0) {
+          console.log('✅ Loaded', userRecentTrades.length, 'recent trades for user');
+          const convertedTrades = userRecentTrades.map((t: any) => ({
+            id: t.id,
+            userId: t.user_id,
+            symbol: t.symbol,
+            type: t.type,
+            volume: t.volume,
+            entryPrice: t.entry_price,
+            closePrice: t.close_price,
+            profit: t.profit,
+            openedAt: new Date(t.opened_at).getTime(),
+            closedAt: t.closed_at ? new Date(t.closed_at).getTime() : undefined,
+            status: t.status
+          }));
+          setRecentTrades(convertedTrades);
+        } else {
+          console.log('ℹ️ No recent trades found for user');
+          setRecentTrades([]);
         }
       }
 
@@ -2401,6 +2490,51 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     // Sync balance update to Supabase
     syncUserBalance(user.id, newBalance);
   };
+
+  // Record a closed trade to recent trades history (persisted to Supabase)
+  const recordTrade = (symbol: string, type: 'BUY' | 'SELL', volume: number, entryPrice: number, closePrice: number) => {
+    if (!user) return;
+    
+    const profit = (type === 'BUY' ? closePrice - entryPrice : entryPrice - closePrice) * volume;
+    const newTrade = {
+      id: generateId(),
+      userId: user.id,
+      symbol,
+      type,
+      volume,
+      entryPrice,
+      closePrice,
+      profit,
+      openedAt: Date.now(),
+      closedAt: Date.now(),
+      status: 'CLOSED' as const
+    };
+    
+    // Add to recent trades
+    setRecentTrades((prev) => [newTrade, ...prev]);
+    
+    // Sync to Supabase
+    supabase.from('recent_trades').insert({
+      id: newTrade.id,
+      user_id: newTrade.userId,
+      symbol: newTrade.symbol,
+      type: newTrade.type,
+      volume: newTrade.volume,
+      entry_price: newTrade.entryPrice,
+      close_price: newTrade.closePrice,
+      profit: newTrade.profit,
+      opened_at: new Date(newTrade.openedAt).toISOString(),
+      closed_at: new Date(newTrade.closedAt!).toISOString(),
+      status: 'CLOSED'
+    }).then(({ error }) => {
+      if (error) {
+        console.error('❌ Error recording trade:', error.message);
+      } else {
+        console.log('✅ Trade recorded:', symbol, 'Profit: $' + profit.toFixed(2));
+      }
+    });
+  };
+
   const modifyTradeSLTP = (
   tradeId: string,
   sl: number | null,
@@ -3556,6 +3690,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         purchasedSignals,
         purchasedCopyTrades,
         purchasedFundedAccounts,
+        recentTrades,
         botTemplates,
         signalTemplates,
         copyTradeTemplates,
@@ -3568,6 +3703,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         logout,
         executeTrade,
         closeTrade,
+        recordTrade,
         modifyTradeSLTP,
         deposit,
         withdraw,

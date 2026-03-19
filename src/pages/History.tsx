@@ -21,9 +21,10 @@ export function HistoryPage() {
     purchasedBots,
     purchasedSignals,
     purchasedFundedAccounts,
+    recentTrades,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'all' | 'transactions' | 'copy-trades' | 'bots' | 'signals' | 'funded-accounts'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'transactions' | 'copy-trades' | 'bots' | 'signals' | 'funded-accounts' | 'recent-trades'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'closed' | 'completed' | 'pending' | 'failed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -206,6 +207,7 @@ export function HistoryPage() {
       <div className="flex bg-gray-100 dark:bg-[#161b22] p-1 rounded border border-gray-300 dark:border-[#21262d] overflow-x-auto no-scrollbar">
         {[
           { id: 'all', label: 'All History' },
+          { id: 'recent-trades', label: 'Recent Trades' },
           { id: 'transactions', label: 'Transactions' },
           { id: 'copy-trades', label: 'Copy Trades' },
           { id: 'bots', label: 'Bots' },

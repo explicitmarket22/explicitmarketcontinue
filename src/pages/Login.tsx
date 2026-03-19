@@ -90,14 +90,12 @@ export function LoginPage() {
                 onClick={() => window.location.href = '/auth/signup'}
                 className="text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 font-medium"
               >
-                Sign Up
+                Forget Password
               </button>
             </div>
 
             <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs text-blue-400">
-              <p className="font-semibold mb-1">Admin Access:</p>
-              <p>Email: <span className="font-mono">admin@work.com</span></p>
-              <p>Password: <span className="font-mono">admin</span></p>
+              <p className="font-semibold mb-1">EXPLICIT MARKET:</p>
             </div>
           </CardContent>
         </Card>

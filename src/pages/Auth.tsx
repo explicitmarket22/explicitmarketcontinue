@@ -270,9 +270,7 @@ export function AuthPage() {
 
             {isLogin && (
               <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs text-blue-300">
-                <p className="font-semibold mb-1">Admin Access:</p>
-                <p>Email: <span className="font-mono">admin@work.com</span></p>
-                <p>Password: <span className="font-mono">admin</span></p>
+               EXPLICIT MARKET
               </div>
             )}
           </CardContent>
