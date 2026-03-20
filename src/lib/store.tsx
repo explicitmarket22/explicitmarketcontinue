@@ -691,10 +691,31 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
   }, [botActive, user, assets]);
 
   // Bot Earnings Automation - Every 3 seconds with performance-based calculation
+  // Subscribe to real-time updates for cross-device sync
+  // Realtime subscriptions disabled - use refresh on login for now
+  /*
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to user_bots changes for current user
+    const botsSubscription = supabase
+      .from(`user_bots:user_id=eq.${user.id}`)
+      .on('*', (payload) => {
+        // ... subscription code ...
+      })
+      .subscribe();
+
+    return () => {
+      botsSubscription?.unsubscribe();
+    };
+  }, [user]);
+  */
+
+  // Earnings calculation (every 3 seconds)
   useEffect(() => {
     const botEarningsInterval = setInterval(() => {
-      setPurchasedBots((prev) =>
-        prev.map((bot) => {
+      setPurchasedBots((prev) => {
+        const updated = prev.map((bot) => {
           // Skip if bot not active or no allocation
           if (bot.status !== 'ACTIVE' || bot.allocatedAmount === 0) return bot;
           
@@ -721,7 +742,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
               setAccount((prev) => ({ ...prev, balance: newBal }));
             }
             
-            console.log(`✅ Bot CLOSED: "${bot.botName}" refunded $${totalRefund.toFixed(2)} (Alloc: $${bot.allocatedAmount.toFixed(2)} + Earnings: $${bot.totalEarned.toFixed(2)})`);
+            console.log(`✅ Bot CLOSED: "${bot.botName}" refunded $${totalRefund.toFixed(2)}`);
             
             return {
               ...bot,
@@ -729,98 +750,98 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
             };
           }
           
-          // Calculate earnings based on performance spread over 3-second intervals
-          // performance: bot's win rate (e.g., 64%)
-          // Calculate total earning potential: allocation * (performance / 100)
-          const performancePercent = (bot.performance || bot.dailyReturn || 10) / 100;
-          const totalEarningPotential = bot.allocatedAmount * performancePercent;
-          
-          // Calculate total intervals based on actual duration (endDate - startedAt)
-          const durationMs = bot.endDate && bot.startedAt ? (bot.endDate - bot.startedAt) : 24 * 60 * 60 * 1000;
-          const totalIntervals = Math.max(1, durationMs / 3000); // How many 3-second intervals
-          
-          // Per 3-second interval: totalEarningPotential / totalIntervals
-          const baseEarning = totalEarningPotential / totalIntervals;
+          // Calculate earnings based on performance (daily return % per 3-second interval)
+          // If 10% daily return, that means 10% of allocation per day
+          // Over 3 seconds: (10% / 86400 seconds) * 3 seconds
+          const performancePercent = (bot.performance || bot.dailyReturn || 10) / 100; // daily return percentage
+          const dailyEarning = bot.allocatedAmount * performancePercent; // daily earning in dollars
+          const earningPer3Seconds = (dailyEarning / 86400) * 3; // spread over 3-second intervals
           
           // Apply win/loss outcome
           let profitOrLoss: number;
           if (bot.outcome === 'win') {
-            // WIN: Full earning
-            profitOrLoss = baseEarning;
+            profitOrLoss = earningPer3Seconds;
           } else if (bot.outcome === 'lose') {
-            // LOSE: No earning (break even)
             profitOrLoss = 0;
           } else {
-            // RANDOM: 70% chance of win, 30% chance of no earning
-            profitOrLoss = Math.random() > 0.3 ? baseEarning : 0;
+            // 70% chance of winning per interval (realistic)
+            profitOrLoss = Math.random() > 0.3 ? earningPer3Seconds : 0;
           }
           
-          // Update totals
+          // Calculate new total earned
           const newTotalEarned = bot.totalEarned + profitOrLoss;
-          const newTotalLost = bot.totalLost; // No losses in this model
           
-          // Check drawdown limit
-          const currentValue = bot.allocatedAmount + newTotalEarned;
-          
-          // Update user balance in allUsers
-          setAllUsers((prevUsers) =>
-            prevUsers.map((u) =>
-              u.id === bot.userId
-                ? { ...u, balance: (u.balance || 0) + profitOrLoss }
-                : u
-            )
-          );
-          
-          // Update current user's account if they own this bot
-          if (user && user.id === bot.userId) {
-            setAccount((prev) => ({
-              ...prev,
-              balance: prev.balance + profitOrLoss
-            }));
+          // Log earning updates occasionally (every ~30 seconds to avoid spam)
+          if (Math.random() < 0.1) {
+            console.log(`📈 ${bot.botName}: +$${profitOrLoss.toFixed(6)} (Total: $${newTotalEarned.toFixed(2)})`);
           }
           
           return {
             ...bot,
             totalEarned: newTotalEarned,
-            totalLost: newTotalLost
-            // DO NOT update allocatedAmount - keep it as the original allocation
+            totalLost: bot.totalLost
           };
-        })
+        });
+        
+        return updated;
       );
     }, 3000); // Every 3 seconds
     
     return () => clearInterval(botEarningsInterval);
   }, [user]);
 
-  // Sync bot earnings to Supabase (debounced every 10 seconds)
+  // Sync bot earnings to Supabase every 10 seconds
   useEffect(() => {
-    const syncInterval = setInterval(async () => {
-      if (!user) return; // Only sync if user is logged in
-      
-      for (const bot of purchasedBots) {
-        if (bot.status === 'ACTIVE') {
-          // Sync earnings to Supabase for all active bots
-          const { data, error } = await supabase
-            .from('purchased_bots')
-            .update({
-              total_earned: bot.totalEarned,
-              total_lost: bot.totalLost,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', bot.id)
-            .eq('user_id', user.id); // Important for RLS policies
-          
-          if (error) {
-            console.error('❌ Error syncing bot earnings for', bot.botName, ':', error.message);
-          } else {
-            console.log('✅ Bot earnings synced:', bot.botName, 'Earned: $' + bot.totalEarned.toFixed(2));
-          }
-        }
-      }
-    }, 10000); // Sync every 10 seconds
+    if (!user) {
+      console.log('⏸️ Earnings sync paused - user not logged in');
+      return;
+    }
     
-    return () => clearInterval(syncInterval);
-  }, [purchasedBots, user]);
+    console.log('🔄 Starting earnings sync interval for user:', user.email);
+    
+    const syncInterval = setInterval(async () => {
+      setPurchasedBots((currentBots) => {
+        const activeBots = currentBots.filter(b => b.status === 'ACTIVE' && b.userId === user.id);
+        
+        if (activeBots.length === 0) {
+          console.log('⏭️ No active bots to sync');
+          return currentBots;
+        }
+        
+        console.log(`⏳ Syncing ${activeBots.length} active bot(s)...`);
+        
+        // Sync all active bots to Supabase
+        activeBots.forEach((bot) => {
+          const updateData = {
+            total_earned: bot.totalEarned,
+            total_lost: bot.totalLost,
+            updated_at: new Date().toISOString()
+          };
+          
+          console.log(`📤 Uploading ${bot.botName}: earned=$${bot.totalEarned.toFixed(2)}, allocated=$${bot.allocatedAmount.toFixed(2)}`);
+          
+          supabase
+            .from('user_bots')
+            .update(updateData)
+            .eq('id', bot.id)
+            .then(({ data, error }) => {
+              if (error) {
+                console.error(`❌ Sync failed for ${bot.botName}:`, error.message);
+              } else {
+                console.log(`✅ Synced ${bot.botName}: $${bot.totalEarned.toFixed(2)} earned`);
+              }
+            });
+        });
+        
+        return currentBots;
+      });
+    }, 10000); // Every 10 seconds
+    
+    return () => {
+      clearInterval(syncInterval);
+      console.log('🛑 Earnings sync stopped');
+    };
+  }, [user]);
 
   // Signal Earnings Simulation (every 5 seconds with win rate-based spread calculation)
   useEffect(() => {
@@ -931,7 +952,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         if (signal.status === 'ACTIVE') {
           // Sync earnings to Supabase for all active signals
           const { data, error } = await supabase
-            .from('purchased_signals')
+            .from('user_signals')
             .update({
               earnings: signal.earnings,
               total_earnings_realized: signal.totalEarningsRealized,
@@ -961,7 +982,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         if (copyTrade.status === 'ACTIVE') {
           // Sync profit to Supabase for all active copy trades
           const { data, error } = await supabase
-            .from('purchased_copy_trades')
+            .from('user_copy_trades')
             .update({
               profit: copyTrade.profit,
               copied_trades: copyTrade.copiedTrades,
@@ -989,48 +1010,110 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     return () => {};
   }, [recentTrades, user]);
 
-  // ============ SYNC FUNCTIONS FOR SUPABASE ============
-  
-  // Sync user balance to Supabase
-  const syncUserBalance = async (userId: string, newBalance: number) => {
-    try {
-      const { error } = await supabase
-        .from('user_balances')
-        .update({ balance: newBalance })
-        .eq('user_id', userId);
-      
-      if (error) console.error('Error syncing balance:', error);
-    } catch (err) {
-      console.error('Error in syncUserBalance:', err);
-    }
-  };
+  // ============ REAL-TIME SUBSCRIPTIONS FOR CROSS-DEVICE SYNC ============
 
-  // Sync transaction (trade, deposit, withdrawal) to Supabase
-  const syncTransaction = async (transaction: Transaction) => {
-    try {
-      console.log('💾 Syncing transaction:', transaction);
-      const { data, error } = await supabase
-        .from('transactions')
-        .insert({
-          user_id: transaction.userId,
-          transaction_type: transaction.type,
-          amount: transaction.amount,
-          method: transaction.method,
-          status: transaction.status,
-          description: `${transaction.type} transaction`,
-          created_at: new Date(transaction.date).toISOString()
-        })
-        .select();
-      
-      if (error) {
-        console.error('❌ Error syncing transaction:', error.code, '-', error.message);
-      } else {
-        console.log('✅ Transaction synced successfully:', data);
-      }
-    } catch (err: any) {
-      console.error('❌ Error in syncTransaction:', err.message);
-    }
-  };
+  // Subscribe to user_bots changes for real-time sync
+  useEffect(() => {
+    if (!user) return;
+
+    const botsSubscription = supabase
+      .channel('user_bots_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_bots',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🔄 Real-time bot update:', payload);
+          if (payload.eventType === 'UPDATE') {
+            const updatedBot = payload.new;
+            setPurchasedBots((prev) =>
+              prev.map((bot) =>
+                bot.id === updatedBot.id
+                  ? {
+                      ...bot,
+                      status: updatedBot.status,
+                      allocated_amount: updatedBot.allocated_amount,
+                      total_earned: updatedBot.total_earned,
+                      total_lost: updatedBot.total_lost,
+                      approved_at: updatedBot.approved_at,
+                      started_at: updatedBot.started_at,
+                      end_date: updatedBot.end_date,
+                      outcome: updatedBot.outcome
+                    }
+                  : bot
+              )
+            );
+          } else if (payload.eventType === 'INSERT') {
+            const newBot = payload.new;
+            const convertedBot: PurchasedBot = {
+              id: newBot.id,
+              userId: newBot.user_id,
+              botId: newBot.id, // Use the purchase ID as botId
+              botName: newBot.bot_name,
+              allocatedAmount: newBot.allocated_amount || 0,
+              totalEarned: newBot.total_earned || 0,
+              totalLost: newBot.total_lost || 0,
+              status: newBot.status,
+              purchasedAt: new Date(newBot.created_at).getTime(),
+              approvedAt: newBot.approved_at ? new Date(newBot.approved_at).getTime() : undefined,
+              performance: newBot.performance,
+              dailyReturn: newBot.daily_return,
+              durationValue: newBot.duration_value,
+              durationType: newBot.duration_type,
+              maxDurationMs: newBot.max_duration_ms,
+              endDate: newBot.end_date ? new Date(newBot.end_date).getTime() : undefined,
+              outcome: newBot.outcome,
+              startedAt: newBot.started_at ? new Date(newBot.started_at).getTime() : undefined
+            };
+            setPurchasedBots((prev) => [...prev, convertedBot]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(botsSubscription);
+    };
+  }, [user]);
+
+  // Subscribe to user_balances changes for real-time balance sync
+  useEffect(() => {
+    if (!user) return;
+
+    const balanceSubscription = supabase
+      .channel('user_balances_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_balances',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🔄 Real-time balance update:', payload);
+          if (payload.eventType === 'UPDATE') {
+            const newBalance = payload.new.balance;
+            setAccount((prev) => ({ ...prev, balance: newBalance }));
+            setUser((prev) => prev ? { ...prev, balance: newBalance } : prev);
+            setAllUsers((prev) =>
+              prev.map((u) =>
+                u.id === user.id ? { ...u, balance: newBalance } : u
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(balanceSubscription);
+    };
+  }, [user]);
 
   // Load all user data from Supabase on login
   const loadUserDataFromSupabase = async (userId: string, isAdmin: boolean = false) => {
@@ -1266,7 +1349,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         // 4. Load user purchased bots
         console.log('Loading user purchased bots...');
         const { data: userBots, error: botsError } = await supabase
-          .from('purchased_bots')
+          .from('user_bots')
           .select('*')
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
@@ -1278,7 +1361,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
           const convertedBots: PurchasedBot[] = userBots.map((b: any) => ({
             id: b.id,
             userId: b.user_id,
-            botId: b.bot_id,
+            botId: b.id, // Use purchase ID as botId
             botName: b.bot_name,
             allocatedAmount: b.allocated_amount || 0,
             totalEarned: b.total_earned || 0,
@@ -1303,7 +1386,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         // 5. Load user purchased signals
         console.log('Loading user purchased signals...');
         const { data: userSignals, error: signalsError } = await supabase
-          .from('purchased_signals')
+          .from('user_signals')
           .select('*')
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
@@ -1341,7 +1424,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         // 6. Load user copy trades
         console.log('Loading user copy trades...');
         const { data: userCopyTrades, error: copyTradesError } = await supabase
-          .from('purchased_copy_trades')
+          .from('user_copy_trades')
           .select('*')
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
@@ -2010,14 +2093,53 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     return allUsers.find((u) => u.id === userId);
   };
 
+  // Sync user balance to Supabase
+  const syncUserBalance = async (userId: string, balance: number) => {
+    // Update user_balances table (where balance is actually stored)
+    const { error } = await supabase
+      .from('user_balances')
+      .upsert({ user_id: userId, balance }, { onConflict: 'user_id' });
+
+    if (error) {
+      console.error('❌ Error syncing balance to Supabase:', error.message);
+    } else {
+      console.log(`✅ Balance synced for user ${userId}: $${balance.toFixed(2)}`);
+    }
+  };
+
   // Bot Purchase Methods
-  const purchaseBot = (botId: string, botName: string, price: number, performance: number) => {
+  const purchaseBot = async (botId: string, botName: string, price: number, performance: number) => {
     if (!user || user.balance === undefined || user.balance < price) {
       alert('Insufficient balance');
       return;
     }
+
+    // Save to Supabase (let it generate the UUID)
+    const { data: insertedBot, error: botError } = await supabase
+      .from('user_bots')
+      .insert({
+        user_id: user.id,
+        bot_name: botName,
+        allocated_amount: 0,
+        total_earned: 0,
+        total_lost: 0,
+        status: 'PENDING_APPROVAL',
+        performance,
+        daily_return: performance,
+        purchased_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (botError) {
+      console.error('❌ Error saving bot to Supabase:', botError.message);
+      alert('❌ Failed to purchase bot. Please try again.');
+      return;
+    }
+
+    // Now create the local bot object with the real UUID from Supabase
     const newBot: PurchasedBot = {
-      id: generateId(),
+      id: insertedBot.id,
       userId: user.id,
       botId,
       botName,
@@ -2025,27 +2147,28 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       totalEarned: 0,
       totalLost: 0,
       status: 'PENDING_APPROVAL',
-      purchasedAt: Date.now(),
+      purchasedAt: new Date(insertedBot.created_at).getTime(),
       performance,
-      dailyReturn: performance // Use the bot's actual performance as earning rate
+      dailyReturn: performance
     };
     setPurchasedBots((prev) => [...prev, newBot]);
     
-    // Save to Supabase
-    supabase.from('purchased_bots').insert({
-      id: newBot.id,
-      user_id: newBot.userId,
-      bot_id: botId,
-      bot_name: botName,
-      allocated_amount: 0,
-      total_earned: 0,
-      total_lost: 0,
-      status: 'PENDING_APPROVAL',
-      performance,
-      daily_return: performance
-    }).then(({error}) => {
-      if (error) console.error('❌ Error saving bot to Supabase:', error.message);
-    });
+    // Create transaction record
+    const { error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: user.id,
+        transaction_type: 'BOT_PURCHASE',
+        amount: price,
+        method: 'balance',
+        status: 'COMPLETED',
+        description: `Bot purchase: ${botName}`,
+        created_at: new Date().toISOString()
+      });
+
+    if (txError) {
+      console.error('❌ Error creating transaction record:', txError.message);
+    }
     
     // Deduct from balance AND update all user states
     const newBal = user.balance - price;
@@ -2057,6 +2180,9 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     setAllUsers((prev) =>
       prev.map((u) => (u.id === user.id ? { ...u, balance: newBal } : u))
     );
+    
+    // Sync balance to Supabase
+    await syncUserBalance(user.id, newBal);
     
     alert('✅ Bot purchase request sent. Awaiting admin approval.');
   };
@@ -2089,7 +2215,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     setPurchasedSignals((prev) => [...prev, newSignal]);
     
     // Save to Supabase
-    supabase.from('purchased_signals').insert({
+    supabase.from('user_signals').insert({
       id: newSignal.id,
       user_id: newSignal.userId,
       signal_id: signalId,
@@ -2161,7 +2287,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     alert(`✅ Allocated $${amount.toFixed(2)} for signal. Awaiting admin activation approval.`);
   };
 
-  const approveBotPurchase = (botPurchaseId: string) => {
+  const approveBotPurchase = async (botPurchaseId: string) => {
     // First approval - just approve the purchase, user can now allocate capital
     setPurchasedBots((prev) =>
       prev.map((b) =>
@@ -2170,10 +2296,34 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
           : b
       )
     );
+
+    // Update in Supabase
+    const { error } = await supabase
+      .from('user_bots')
+      .update({
+        status: 'APPROVED_FOR_ALLOCATION',
+        approved_at: new Date().toISOString()
+      })
+      .eq('id', botPurchaseId);
+
+    if (error) {
+      console.error('❌ Error updating bot approval in Supabase:', error.message);
+      alert('❌ Failed to update bot approval in database');
+      // Revert local state
+      setPurchasedBots((prev) =>
+        prev.map((b) =>
+          b.id === botPurchaseId
+            ? { ...b, status: 'PENDING_APPROVAL', approvedAt: undefined }
+            : b
+        )
+      );
+      return;
+    }
+
     alert('✅ Bot purchase approved. User can now allocate capital.');
   };
 
-  const approveBotActivation = (botPurchaseId: string, durationValue: string = '7', durationType: 'minutes' | 'hours' | 'days' = 'days', outcome: 'win' | 'lose' = 'win') => {
+  const approveBotActivation = async (botPurchaseId: string, durationValue: string = '7', durationType: 'minutes' | 'hours' | 'days' = 'days', outcome: 'win' | 'lose' = 'win') => {
     const bot = purchasedBots.find(b => b.id === botPurchaseId);
     if (!bot) return;
 
@@ -2232,19 +2382,27 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       )
     );
     
-    // Update in Supabase
+    // Update in Supabase - use user_bots table (same table used for loading)
+    const nowIso = new Date(now).toISOString();
     const endDateStr = new Date(endDate).toISOString();
-    supabase.from('purchased_bots').update({
+    const { error: updateError } = await supabase.from('user_bots').update({
       status: 'ACTIVE',
-      started_at: endDateStr,
+      started_at: nowIso,
       duration_value: durationValue,
       duration_type: durationType,
-      max_duration_ms: durationMs,
       end_date: endDateStr,
-      outcome
-    }).eq('id', botPurchaseId).then(({error}) => {
-      if (error) console.error('❌ Error updating bot in Supabase:', error.message);
-    });
+      outcome,
+      updated_at: nowIso
+    }).eq('id', botPurchaseId);
+    
+    if (updateError) {
+      console.error('❌ Error updating bot in Supabase:', updateError.message);
+      alert('❌ Failed to activate bot in database');
+      return;
+    }
+    
+    console.log(`✅ Bot ${bot.botName} activated in database. Duration: ${durationValue} ${durationType}, Outcome: ${outcome}`);
+    alert(`✅ Bot activated! Duration: ${durationValue} ${durationType}. Bot will run until ${new Date(endDate).toLocaleDateString()}`);
   };
 
   const approveSignalSubscription = (signalSubId: string, durationValue: string = '7', durationType: 'minutes' | 'hours' | 'days' = 'days', outcome: 'win' | 'lose' = 'win') => {
@@ -2278,7 +2436,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
           
           // Update in Supabase
           const endDateStr = new Date(endDate).toISOString();
-          supabase.from('purchased_signals').update({
+          supabase.from('user_signals').update({
             status: 'ACTIVE',
             started_at: endDateStr,
             duration_value: durationValue,
@@ -2307,13 +2465,13 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     alert(`✅ Signal activated! Duration: ${durationValue} ${durationType}. Earnings will spread across this period.`);
   };
 
-  const allocateBotCapital = (botPurchaseId: string, amount: number) => {
+  const allocateBotCapital = async (botPurchaseId: string, amount: number) => {
     if (!user || user.balance === undefined || user.balance < amount) {
       alert('Insufficient balance');
       return;
     }
-    
-    // Update bot allocation (does NOT deduct balance - that happens at activation)
+
+    // Update bot allocation in local state first
     setPurchasedBots((prev) =>
       prev.map((bot) =>
         bot.id === botPurchaseId
@@ -2321,7 +2479,29 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
           : bot
       )
     );
-    
+
+    // Update in Supabase
+    const { error } = await supabase
+      .from('user_bots')
+      .update({
+        allocated_amount: amount
+      })
+      .eq('id', botPurchaseId);
+
+    if (error) {
+      console.error('❌ Error updating bot allocation in Supabase:', error.message);
+      alert('❌ Failed to update bot allocation in database');
+      // Revert local state
+      setPurchasedBots((prev) =>
+        prev.map((bot) =>
+          bot.id === botPurchaseId
+            ? { ...bot, allocatedAmount: 0 }
+            : bot
+        )
+      );
+      return;
+    }
+
     alert(`✅ Allocated $${amount.toFixed(2)} to bot. This will be deducted when admin activates.`);
   };
 
@@ -3177,7 +3357,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     setPurchasedCopyTrades((prev) => [...prev, newCopy]);
     
     // Save to Supabase
-    supabase.from('purchased_copy_trades').insert({
+    supabase.from('user_copy_trades').insert({
       id: newCopy.id,
       user_id: newCopy.userId,
       trades_id: newCopy.tradesId,
@@ -3268,7 +3448,7 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     );
     
     // Update in Supabase
-    supabase.from('purchased_copy_trades').update({
+    supabase.from('user_copy_trades').update({
       status: 'CLOSED',
       profit,
       end_date: new Date().toISOString()

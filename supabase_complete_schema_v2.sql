@@ -223,13 +223,17 @@ CREATE TABLE IF NOT EXISTS user_bots (
   status VARCHAR DEFAULT 'PENDING_APPROVAL', -- PENDING_APPROVAL, APPROVED, ACTIVE, PAUSED, CLOSED
   allocated_amount NUMERIC(18,2) DEFAULT 0,
   total_earned NUMERIC(18,2) DEFAULT 0,
+  total_lost NUMERIC(18,2) DEFAULT 0,
   performance NUMERIC(5,2),
+  daily_return NUMERIC(5,2),
   outcome VARCHAR, -- win, lose
   duration_value VARCHAR,
   duration_type VARCHAR, -- minutes, hours, days
+  max_duration_ms BIGINT,
   start_date TIMESTAMP,
   end_date TIMESTAMP,
   purchased_at TIMESTAMP DEFAULT NOW(),
+  approved_at TIMESTAMP,
   activated_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -247,6 +251,30 @@ CREATE TABLE IF NOT EXISTS bot_approvals (
 
 CREATE INDEX idx_bot_user ON user_bots(user_id);
 CREATE INDEX idx_bot_status ON user_bots(status);
+
+-- =============================================================================
+-- 7b. RECENT TRADES HISTORY
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS recent_trades (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  trade_type VARCHAR NOT NULL, -- BUY, SELL, etc
+  symbol VARCHAR NOT NULL,
+  entry_price NUMERIC(18,8),
+  current_price NUMERIC(18,8),
+  quantity NUMERIC(18,8),
+  profit_loss NUMERIC(18,2),
+  profit_loss_percentage NUMERIC(5,2),
+  status VARCHAR DEFAULT 'OPEN', -- OPEN, CLOSED
+  opened_at TIMESTAMP DEFAULT NOW(),
+  closed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_recent_trades_user ON recent_trades(user_id);
+CREATE INDEX idx_recent_trades_status ON recent_trades(status);
 
 -- =============================================================================
 -- 8. SIGNAL MANAGEMENT & SUBSCRIPTIONS

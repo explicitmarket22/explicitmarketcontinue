@@ -156,16 +156,21 @@ export function BotPage() {
     });
   };
 
-  const handlePaymentComplete = () => {
+  const handlePaymentComplete = async () => {
     if (paymentModal.bot) {
       const botData = paymentModal.bot;
-      purchaseBot(
-        `bot_${Date.now()}`,
-        botData.name,
-        botData.price,
-        botData.return
-      );
-      setPaymentModal({ isOpen: false, bot: null, price: 0 });
+      try {
+        await purchaseBot(
+          `bot_${Date.now()}`,
+          botData.name,
+          botData.price,
+          botData.return
+        );
+        setPaymentModal({ isOpen: false, bot: null, price: 0 });
+      } catch (error) {
+        console.error('Bot purchase failed:', error);
+        alert('Failed to purchase bot. Please try again.');
+      }
     }
   };
 

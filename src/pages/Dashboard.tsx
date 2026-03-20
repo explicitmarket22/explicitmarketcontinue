@@ -20,6 +20,7 @@ interface DashboardProps {
 }
 export function Dashboard({ onNavigate }: DashboardProps) {
   const { account, trades, user, assets, history, purchasedBots, purchasedSignals, purchasedCopyTrades, purchasedFundedAccounts, convertFundedToBalance } = useStore();
+  
   const totalProfit = trades.reduce((sum, t) => sum + t.profit, 0);
   const botEarnings = purchasedBots.reduce((sum, b) => sum + b.totalEarned, 0);
   const signalEarnings = purchasedSignals.reduce((sum, s) => sum + s.earnings, 0);
@@ -34,6 +35,16 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     .filter(f => f.status === 'ACTIVE')
     .reduce((sum, f) => sum + f.capital, 0);
   const totalBalanceWithFunded = account.balance;
+  
+  // Debug logging
+  React.useEffect(() => {
+    console.log('📊 Dashboard Updated:');
+    console.log('   Total Bot Earnings:', botEarnings.toFixed(2));
+    console.log('   Active Bots:', purchasedBots.filter(b => b.status === 'ACTIVE').length);
+    purchasedBots.forEach(b => {
+      console.log(`   Bot: ${b.botName} | Status: ${b.status} | Allocated: $${b.allocatedAmount.toFixed(2)} | Earned: $${b.totalEarned.toFixed(2)}`);
+    });
+  }, [botEarnings, purchasedBots]);
   return (
     <div className="min-h-screen bg-white dark:bg-[#0d1117] text-gray-900 dark:text-[#c9d1d9] p-4 md:p-6 space-y-6 pb-20 md:pb-6">
       {/* Welcome Banner */}

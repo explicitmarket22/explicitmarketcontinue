@@ -24,6 +24,18 @@ export function HistoryPage() {
     recentTrades,
   } = useStore();
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('📊 History Page Loaded - Debug Info:');
+    console.log('   User:', user?.name || 'Not logged in');
+    console.log('   Purchased Bots:', purchasedBots?.length || 0);
+    console.log('   Purchased Signals:', purchasedSignals?.length || 0);
+    console.log('   Purchased Copy Trades:', purchasedCopyTrades?.length || 0);
+    if (purchasedBots && purchasedBots.length > 0) {
+      console.log('   Bot Details:', purchasedBots);
+    }
+  }, [user, purchasedBots, purchasedSignals, purchasedCopyTrades]);
+
   const [activeTab, setActiveTab] = useState<'all' | 'transactions' | 'copy-trades' | 'bots' | 'signals' | 'funded-accounts' | 'recent-trades'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'closed' | 'completed' | 'pending' | 'failed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,21 +73,24 @@ export function HistoryPage() {
   }));
 
   // Convert bots to unified format
-  const botHistory = (purchasedBots || []).map((bot) => ({
-    id: bot.id,
-    type: 'bot',
-    title: `Bot - ${bot.botName}`,
-    amount: bot.totalEarned - bot.totalLost,
-    allocation: bot.allocatedAmount,
-    date: bot.purchasedAt,
-    endDate: bot.endDate,
-    status: bot.status,
-    earnings: bot.totalEarned,
-    losses: bot.totalLost,
-    performance: bot.performance,
-    icon: Zap,
-    color: bot.totalEarned - bot.totalLost >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]',
-  }));
+  const botHistory = (purchasedBots || []).map((bot) => {
+    console.log('Converting bot to history:', bot.botName, 'Status:', bot.status);
+    return {
+      id: bot.id,
+      type: 'bot',
+      title: `Bot - ${bot.botName}`,
+      amount: bot.totalEarned - bot.totalLost,
+      allocation: bot.allocatedAmount,
+      date: bot.purchasedAt,
+      endDate: bot.endDate,
+      status: bot.status,
+      earnings: bot.totalEarned,
+      losses: bot.totalLost,
+      performance: bot.performance,
+      icon: Zap,
+      color: bot.totalEarned - bot.totalLost >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]',
+    };
+  });
 
   // Convert signals to unified format
   const signalHistory = (purchasedSignals || []).map((sig) => ({
