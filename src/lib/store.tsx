@@ -839,36 +839,6 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
           
           const now = Date.now();
           
-          // Check if signal duration has expired
-          if (now >= signal.endDate) {
-            // Auto-close signal - duration expired
-            // Refund allocation + final earnings to user
-            const finalRefund = signal.allocation + signal.earnings;
-            
-            setAllUsers((prevUsers) =>
-              prevUsers.map((u) =>
-                u.id === signal.userId
-                  ? { ...u, balance: (u.balance || 0) + finalRefund }
-                  : u
-              )
-            );
-            
-            // Update current user's balance if they're logged in
-            if (user && user.id === signal.userId) {
-              const newBal = (user.balance || 0) + finalRefund;
-              setUser({ ...user, balance: newBal });
-              setAccount((prev) => ({ ...prev, balance: newBal }));
-            }
-            
-            console.log(`✅ Signal CLOSED: "${signal.providerName}" refunded $${finalRefund.toFixed(2)} (Alloc: $${signal.allocation.toFixed(2)} + Earnings: $${signal.earnings.toFixed(2)})`);
-            
-            return {
-              ...signal,
-              status: 'CLOSED',
-              endDate: now
-            };
-          }
-          
           // Calculate total duration and number of 5-second intervals
           const totalDurationMs = signal.endDate - signal.startedAt;
           const totalIntervals = Math.ceil(totalDurationMs / 5000); // Total 5-second intervals in duration
@@ -1067,6 +1037,78 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     };
   }, [user]);
 
+  // Subscribe to user_signals changes for real-time sync
+  useEffect(() => {
+    if (!user) return;
+
+    const signalsSubscription = supabase
+      .channel('user_signals_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_signals',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🔄 Real-time signal update:', payload);
+          if (payload.eventType === 'UPDATE') {
+            const updatedSignal = payload.new;
+            setPurchasedSignals((prev) =>
+              prev.map((signal) =>
+                signal.id === updatedSignal.id
+                  ? {
+                      ...signal,
+                      status: updatedSignal.status,
+                      allocation: updatedSignal.allocation,
+                      earnings: updatedSignal.earnings,
+                      totalEarningsRealized: updatedSignal.total_earnings_realized,
+                      tradesFollowed: updatedSignal.trades_followed,
+                      activeTrades: updatedSignal.active_trades,
+                      approvedAt: updatedSignal.approved_at,
+                      startedAt: updatedSignal.started_at ? new Date(updatedSignal.started_at).getTime() : undefined,
+                      endDate: updatedSignal.end_date ? new Date(updatedSignal.end_date).getTime() : undefined,
+                      outcome: updatedSignal.outcome
+                    }
+                  : signal
+              )
+            );
+          } else if (payload.eventType === 'INSERT') {
+            const newSignal = payload.new;
+            const convertedSignal: PurchasedSignal = {
+              id: newSignal.id,
+              userId: newSignal.user_id,
+              signalId: newSignal.signal_id,
+              providerName: newSignal.provider_name,
+              allocation: newSignal.allocation || 0,
+              cost: newSignal.cost || 0,
+              status: newSignal.status,
+              subscribedAt: newSignal.created_at ? new Date(newSignal.created_at).getTime() : Date.now(),
+              approvedAt: newSignal.approved_at ? new Date(newSignal.approved_at).getTime() : undefined,
+              tradesFollowed: newSignal.trades_followed || 0,
+              winRate: newSignal.win_rate || 0,
+              earnings: newSignal.earnings || 0,
+              totalEarningsRealized: newSignal.total_earnings_realized || 0,
+              activeTrades: newSignal.active_trades || [],
+              durationValue: newSignal.duration_value,
+              durationType: newSignal.duration_type,
+              maxDurationMs: newSignal.max_duration_ms,
+              endDate: newSignal.end_date ? new Date(newSignal.end_date).getTime() : undefined,
+              outcome: newSignal.outcome,
+              startedAt: newSignal.started_at ? new Date(newSignal.started_at).getTime() : undefined
+            };
+            setPurchasedSignals((prev) => [...prev, convertedSignal]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(signalsSubscription);
+    };
+  }, [user]);
+
   // Admin real-time subscription for ALL user_bots (for admin dashboard updates)
   useEffect(() => {
     if (!user?.id || !user.is_admin) return;
@@ -1135,6 +1177,78 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     return () => {
       console.log('🔌 Unsubscribing from admin real-time updates');
       supabase.removeChannel(adminSubscription);
+    };
+  }, [user?.id, user?.is_admin]);
+
+  // Admin real-time subscription for ALL user_signals (for admin dashboard updates)
+  useEffect(() => {
+    if (!user?.id || !user.is_admin) return;
+
+    console.log('🛡️ Setting up admin real-time subscription for ALL signal changes...');
+
+    const adminSignalSubscription = supabase
+      .channel('admin_user_signals_all')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_signals'
+        },
+        (payload: any) => {
+          console.log('🔔 Admin received signal change:', payload.eventType);
+
+          if (payload.eventType === 'UPDATE') {
+            const updatedSignal = payload.new;
+            setPurchasedSignals((prev) =>
+              prev.map((signal) => {
+                if (signal.id !== updatedSignal.id) return signal;
+                return {
+                  ...signal,
+                  status: updatedSignal.status || signal.status,
+                  allocation: updatedSignal.allocation ?? signal.allocation,
+                  earnings: updatedSignal.earnings ?? signal.earnings,
+                  totalEarningsRealized: updatedSignal.total_earnings_realized ?? signal.totalEarningsRealized
+                };
+              })
+            );
+          } else if (payload.eventType === 'INSERT') {
+            const newSignal = payload.new;
+            const convertedSignal: PurchasedSignal = {
+              id: newSignal.id,
+              userId: newSignal.user_id,
+              signalId: newSignal.signal_id,
+              providerName: newSignal.provider_name,
+              allocation: newSignal.allocation || 0,
+              cost: newSignal.cost || 0,
+              status: newSignal.status,
+              subscribedAt: newSignal.created_at ? new Date(newSignal.created_at).getTime() : Date.now(),
+              approvedAt: newSignal.approved_at ? new Date(newSignal.approved_at).getTime() : undefined,
+              tradesFollowed: newSignal.trades_followed || 0,
+              winRate: newSignal.win_rate || 0,
+              earnings: newSignal.earnings || 0,
+              totalEarningsRealized: newSignal.total_earnings_realized || 0,
+              activeTrades: newSignal.active_trades || [],
+              durationValue: newSignal.duration_value,
+              durationType: newSignal.duration_type,
+              maxDurationMs: newSignal.max_duration_ms,
+              endDate: newSignal.end_date ? new Date(newSignal.end_date).getTime() : undefined,
+              outcome: newSignal.outcome,
+              startedAt: newSignal.started_at ? new Date(newSignal.started_at).getTime() : undefined
+            };
+            setPurchasedSignals((prev) => [convertedSignal, ...prev]);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Admin signal real-time subscription active');
+        }
+      });
+
+    return () => {
+      console.log('🔌 Unsubscribing from admin signal updates');
+      supabase.removeChannel(adminSignalSubscription);
     };
   }, [user?.id, user?.is_admin]);
 
@@ -1355,6 +1469,47 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         } else {
           console.log('ℹ️ No user bots found');
           setBotActive(false);
+        }
+
+        // 5. Load all user signals for admin approval management
+        console.log('📡 Loading all user signals for admin...');
+        const { data: allSignals, error: signalsError } = await supabase
+          .from('user_signals')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (signalsError) {
+          console.error('❌ Error loading all user signals:', signalsError.message);
+        } else if (allSignals && allSignals.length > 0) {
+          console.log('✅ Loaded', allSignals.length, 'user signals from all users');
+          const convertedSignals: PurchasedSignal[] = allSignals.map((s: any) => ({
+            id: s.id,
+            userId: s.user_id,
+            signalId: s.signal_id,
+            providerName: s.provider_name,
+            allocation: s.allocation || 0,
+            cost: s.cost || 0,
+            status: s.status,
+            subscribedAt: s.created_at ? new Date(s.created_at).getTime() : Date.now(),
+            approvedAt: s.approved_at ? new Date(s.approved_at).getTime() : undefined,
+            tradesFollowed: s.trades_followed || 0,
+            winRate: s.win_rate || 0,
+            earnings: s.earnings || 0,
+            totalEarningsRealized: s.total_earnings_realized || 0,
+            activeTrades: s.active_trades || [],
+            durationValue: s.duration_value,
+            durationType: s.duration_type,
+            maxDurationMs: s.max_duration_ms,
+            endDate: s.end_date ? new Date(s.end_date).getTime() : undefined,
+            outcome: s.outcome,
+            startedAt: s.started_at ? new Date(s.started_at).getTime() : undefined
+          }));
+          setPurchasedSignals(convertedSignals);
+          // Set botActive for admin too if any signal is active
+          const hasActiveSignals = convertedSignals.some(s => s.status === 'ACTIVE' && s.allocation > 0);
+          if (hasActiveSignals) setBotActive(true);
+        } else {
+          console.log('ℹ️ No user signals found');
         }
 
       } else {
@@ -2287,29 +2442,55 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       prev.map((u) => (u.id === user.id ? { ...u, balance: newBal } : u))
     );
     
-    // Sync balance to Supabase
+    // Sync balance to Supabase for cross-device sync
+    await syncUserBalance(user.id, newBal);
     await syncUserBalance(user.id, newBal);
     
     alert('✅ Bot purchase request sent. Awaiting admin approval.');
   };
 
 
-  const purchaseSignal = (signalId: string, providerName: string, price: number, winRate: number) => {
+  const purchaseSignal = async (signalId: string, providerName: string, price: number, winRate: number) => {
     if (!user || user.balance === undefined || user.balance < price) {
       alert('Insufficient balance for signal subscription');
       return;
     }
-    
-    // Create the signal with 0 allocation (user allocates capital later)
+
+    // Save to Supabase (let it generate the UUID)
+    const { data: insertedSignal, error: signalError } = await supabase
+      .from('user_signals')
+      .insert({
+        user_id: user.id,
+        signal_id: signalId,
+        provider_name: providerName,
+        allocation: 0,
+        cost: price,
+        status: 'PENDING_APPROVAL',
+        win_rate: winRate,
+        trades_followed: 0,
+        earnings: 0,
+        total_earnings_realized: 0,
+        subscribed_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (signalError) {
+      console.error('❌ Error saving signal to Supabase:', signalError.message);
+      alert('❌ Failed to purchase signal. Please try again.');
+      return;
+    }
+
+    // Now create the local signal object with the real UUID from Supabase
     const newSignal: PurchasedSignal = {
-      id: generateId(),
-      userId: user?.id || '',
+      id: insertedSignal.id,
+      userId: user.id,
       signalId,
       providerName,
-      allocation: 0,  // Allocation is set later by user, not at purchase time
-      cost: price,    // Store the purchase price separately
+      allocation: 0,
+      cost: price,
       status: 'PENDING_APPROVAL',
-      subscribedAt: Date.now(),
+      subscribedAt: new Date(insertedSignal.created_at).getTime(),
       approvedAt: undefined,
       tradesFollowed: 0,
       winRate,
@@ -2317,45 +2498,41 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       totalEarningsRealized: 0,
       activeTrades: []
     };
-    
     setPurchasedSignals((prev) => [...prev, newSignal]);
     
-    // Save to Supabase
-    supabase.from('user_signals').insert({
-      id: newSignal.id,
-      user_id: newSignal.userId,
-      signal_id: signalId,
-      provider_name: providerName,
-      allocation: 0,
-      cost: price,
-      status: 'PENDING_APPROVAL',
-      win_rate: winRate,
-      trades_followed: 0,
-      earnings: 0,
-      total_earnings_realized: 0,
-      active_trades: []
-    }).then(({error}) => {
-      if (error) console.error('❌ Error saving signal to Supabase:', error.message);
-    });
+    // Create transaction record
+    const { error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: user.id,
+        transaction_type: 'SIGNAL_PURCHASE',
+        amount: price,
+        method: 'balance',
+        status: 'COMPLETED',
+        description: `Signal subscription: ${providerName}`,
+        created_at: new Date().toISOString()
+      });
+
+    if (txError) {
+      console.error('❌ Error creating transaction record:', txError.message);
+    }
     
-    // Deduct signal subscription price from user balance
+    // Deduct from balance AND update all user states
+    const newBal = user.balance - price;
     setAccount((prev) => ({
       ...prev,
-      balance: prev.balance - price
+      balance: newBal
     }));
-    
-    // Update user balance in allUsers
-    const newBal = (user.balance || 0) - price;
     setUser({ ...user, balance: newBal });
-    setAllUsers((prev) =>
-      prev.map((u) => (u.id === user.id ? { ...u, balance: newBal } : u))
-    );
     
-    alert(`✅ Signal subscription purchased for $${price.toFixed(2)}. Awaiting admin approval to allocate capital.`);
+    // Sync balance to Supabase for cross-device sync
+    await syncUserBalance(user.id, newBal);
+    
+    alert('✅ Signal purchased successfully! Pending admin approval.');
   };
 
 
-  const approveSignalPurchase = (signalPurchaseId: string) => {
+  const approveSignalPurchase = async (signalPurchaseId: string) => {
     // First approval - just approve the purchase, user can now allocate capital
     setPurchasedSignals((prev) =>
       prev.map((s) =>
@@ -2364,16 +2541,40 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
           : s
       )
     );
+
+    // Update in Supabase
+    const { error } = await supabase
+      .from('user_signals')
+      .update({
+        status: 'APPROVED_FOR_ALLOCATION',
+        approved_at: new Date().toISOString()
+      })
+      .eq('id', signalPurchaseId);
+
+    if (error) {
+      console.error('❌ Error updating signal approval in Supabase:', error.message);
+      alert('❌ Failed to update signal approval in database');
+      // Revert local state
+      setPurchasedSignals((prev) =>
+        prev.map((s) =>
+          s.id === signalPurchaseId
+            ? { ...s, status: 'PENDING_APPROVAL', approvedAt: undefined }
+            : s
+        )
+      );
+      return;
+    }
+
     alert('✅ Signal purchase approved. User can now allocate capital.');
   };
 
-  const allocateSignalCapital = (signalPurchaseId: string, amount: number) => {
+  const allocateSignalCapital = async (signalPurchaseId: string, amount: number) => {
     if (!user || user.balance === undefined || user.balance < amount) {
       alert('Insufficient balance');
       return;
     }
     
-    // Update signal allocation
+    // Update signal allocation in local state first
     setPurchasedSignals((prev) =>
       prev.map((signal) =>
         signal.id === signalPurchaseId
@@ -2382,6 +2583,28 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
       )
     );
     
+    // Update in Supabase
+    const { error } = await supabase
+      .from('user_signals')
+      .update({
+        allocation: amount
+      })
+      .eq('id', signalPurchaseId);
+
+    if (error) {
+      console.error('❌ Error updating signal allocation in Supabase:', error.message);
+      alert('❌ Failed to update signal allocation in database');
+      // Revert local state
+      setPurchasedSignals((prev) =>
+        prev.map((signal) =>
+          signal.id === signalPurchaseId
+            ? { ...signal, allocation: 0 }
+            : signal
+        )
+      );
+      return;
+    }
+    
     // Deduct allocation from user balance immediately (like bots)
     const newBal = user.balance - amount;
     setUser({ ...user, balance: newBal });
@@ -2389,6 +2612,9 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
     setAllUsers((prev) =>
       prev.map((u) => (u.id === user.id ? { ...u, balance: newBal } : u))
     );
+    
+    // Sync balance to Supabase for cross-device sync
+    await syncUserBalance(user.id, newBal);
     
     alert(`✅ Allocated $${amount.toFixed(2)} for signal. Awaiting admin activation approval.`);
   };
@@ -2541,10 +2767,11 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
           const endDate = now + durationMs;
           
           // Update in Supabase
+          const nowStr = new Date(now).toISOString();
           const endDateStr = new Date(endDate).toISOString();
           supabase.from('user_signals').update({
             status: 'ACTIVE',
-            started_at: endDateStr,
+            started_at: nowStr,
             duration_value: durationValue,
             duration_type: durationType,
             end_date: endDateStr,
@@ -2637,6 +2864,9 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         const newBal = (user.balance ?? 0) + netRefund;
         setUser({ ...user, balance: newBal });
         setAccount((prev) => ({ ...prev, balance: newBal }));
+        
+        // Sync balance to Supabase for cross-device sync
+        syncUserBalance(user.id, newBal);
       }
     }
     alert(
@@ -2669,6 +2899,9 @@ export function StoreProvider({ children }: {children: React.ReactNode;}) {
         const newBal = (user.balance ?? 0) + totalRefund;
         setUser({ ...user, balance: newBal });
         setAccount((prev) => ({ ...prev, balance: newBal }));
+        
+        // Sync balance to Supabase for cross-device sync
+        syncUserBalance(user.id, newBal);
       }
     }
     alert(
